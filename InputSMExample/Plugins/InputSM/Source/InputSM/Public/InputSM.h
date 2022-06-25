@@ -3,10 +3,66 @@
 #pragma once
 
 #include "UObject/NoExportTypes.h"
-#include "InputFrameStack.h"
 #include "InputSM.generated.h"
 
 class UEdGraph;
+
+USTRUCT()
+struct INPUTSM_API FInputFrame
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	FInputFrame() { Reset(); }
+
+	void Reset() { LeftStickHor = LeftStickVer = RightStickHor = RightStickVer = 0; PackedBits = 0; }
+
+	UPROPERTY()
+	float LeftStickHor;
+	UPROPERTY()
+	float LeftStickVer;
+	UPROPERTY()
+	float RightStickHor;
+	UPROPERTY()
+	float RightStickVer;
+
+	union
+	{
+		UPROPERTY()
+		uint16 PackedBits;
+		
+		struct
+		{
+			uint16 LeftUpperTrigger : 2;
+			uint16 LeftTrigger : 2;
+			uint16 RightUpperTrigger : 2;
+			uint16 RightTrigger : 2;
+
+			uint16 X : 2;
+			uint16 Y : 2;
+			uint16 A : 2;
+			uint16 B : 2;
+		};
+	};
+};
+
+USTRUCT()
+struct INPUTSM_API FInputFrameStack
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	FInputFrameStack() { Frames.Empty(); ActiveFrameIndex = INDEX_NONE; }
+
+	UPROPERTY()
+	TArray<FInputFrame> Frames;
+
+	int32 ActiveFrameIndex;
+
+	bool IsOpen() const { return Frames.Num() == ActiveFrameIndex; }
+};
 
 USTRUCT()
 struct INPUTSM_API FInputSMTransition
@@ -17,10 +73,11 @@ public:
 
 	FInputSMTransition() { TargetIndex = INDEX_NONE; }
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 		int32 TargetIndex;
 
-	FInputFrameStack ActivationStack;
+	UPROPERTY()
+		FInputFrameStack ActivationStack;
 };
 
 USTRUCT()
@@ -32,7 +89,7 @@ public:
 
 	FInputSMNode() {}
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY()
 		TArray<FInputSMTransition> Transitions;
 };
 

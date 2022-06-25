@@ -4,4 +4,12 @@
 
 #include "Modules/ModuleManager.h"
 
-class FInputSMEditorModule : public IModuleInterface{};
+class FInputSMEditorModule : public IModuleInterface
+{
+public:
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+
+private:
+	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
+};

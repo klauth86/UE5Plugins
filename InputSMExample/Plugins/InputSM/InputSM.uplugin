@@ -17,13 +17,11 @@
 	"Modules": [
 		{
 			"Name": "InputSM",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
+			"Type": "Runtime"
 		},
 		{
 			"Name": "InputSMEditor",
-			"Type": "Editor",
-			"LoadingPhase": "Default"
+			"Type": "Editor"
 		}
 	]
 }

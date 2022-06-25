@@ -35,7 +35,11 @@ public class InputSMEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Engine"
+				"Engine",
+				"UnrealEd",
+				"AssetTools",
+
+				"InputSM",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
