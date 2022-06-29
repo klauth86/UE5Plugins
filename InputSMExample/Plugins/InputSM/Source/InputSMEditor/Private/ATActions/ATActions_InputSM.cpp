@@ -2,7 +2,6 @@
 
 #include "ATActions_InputSM.h"
 #include "InputSM.h"
-//#include "MSeqEditor.h"
 
 UClass* FATActions_InputSM::GetSupportedClass() const { return UInputSM::StaticClass(); }
 

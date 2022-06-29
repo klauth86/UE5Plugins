@@ -12,7 +12,7 @@ class UFactory_InputSM : public UFactory
 
 public:
 
-	virtual FText GetDisplayName() const override { return NSLOCTEXT("Factory_InputSM", "UFactory_InputSM", "Input State Machine"); }
+	virtual FText GetDisplayName() const override { return NSLOCTEXT("UFactory_InputSM", "DisplayName", "Input State Machine"); }
 	virtual uint32 GetMenuCategories() const override;
 	virtual UObject* FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn, FName CallingContext) override;
 	virtual UObject* FactoryCreateNew(UClass* Class, UObject* InParent, FName Name, EObjectFlags Flags, UObject* Context, FFeedbackContext* Warn) override
