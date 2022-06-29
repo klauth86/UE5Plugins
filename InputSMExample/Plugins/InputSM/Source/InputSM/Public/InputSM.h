@@ -91,6 +91,9 @@ public:
 
 	UPROPERTY()
 		TArray<FInputSMTransition> Transitions;
+
+	UPROPERTY()
+		UObject* NodeAsset;
 };
 
 UCLASS()
@@ -105,10 +108,13 @@ public:
 		UEdGraph* EdGraph;
 #endif
 
-	TMap<int32, FInputSMNode>& GetInputGraph() { return InputGraph; }
+	TArray<FInputSMNode>& GetNodes() { return Nodes; }
 
 protected:
 
 	UPROPERTY()
-		TMap<int32, FInputSMNode> InputGraph;
+		int32 ActiveNodeIndex = INDEX_NONE;
+
+	UPROPERTY()
+		TArray<FInputSMNode> Nodes;
 };

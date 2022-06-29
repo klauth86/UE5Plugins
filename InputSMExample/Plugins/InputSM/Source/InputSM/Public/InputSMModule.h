@@ -4,4 +4,4 @@
 
 #include "Modules/ModuleManager.h"
 
-class FInputSMModule : public IModuleInterface{};
+class FInputSMModule : public IModuleInterface {};
