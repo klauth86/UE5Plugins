@@ -43,7 +43,7 @@ public class InputSMEditor : ModuleRules
 				"EditorStyle",
 				"ApplicationCore",
 				"GraphEditor",
-
+				"EditorStyle",
 				"InputSM",
 				// ... add private dependencies that you statically link with here ...	
 			}

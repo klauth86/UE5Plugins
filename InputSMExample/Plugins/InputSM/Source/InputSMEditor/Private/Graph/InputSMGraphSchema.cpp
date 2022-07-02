@@ -3,9 +3,63 @@
 #include "Graph/InputSMGraphSchema.h"
 #include "Graph/InputSMGraph.h"
 #include "Graph/InputSMGraphNode_Base.h"
-#include "InputSM.h"
+#include "Graph/InputSMGraphSchemaAction_NewStateNode.h"
+#include "Classes/EditorStyleSettings.h"
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "EdGraphUtilities.h"
 
 #define LOCTEXT_NAMESPACE "UInputSMGraphSchema"
+
+template<class T>
+TSharedPtr<T> AddNewActionAs(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
+{
+	TSharedPtr<T> NewStateNode(new T(Category, MenuDesc, Tooltip, Grouping));
+	ContextMenuBuilder.AddAction(NewStateNode);
+	return NewStateNode;
+}
+
+UEdGraphNode* FInputSMGraphSchemaAction_NewStateNode::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+{
+	UEdGraphNode* ResultNode = NULL;
+
+	// If there is a template, we actually use it
+	if (NodeTemplate != NULL)
+	{
+		const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddNode", "Add Node"));
+		ParentGraph->Modify();
+		if (FromPin)
+		{
+			FromPin->Modify();
+		}
+
+		// set outer to be the graph so it doesn't go away
+		NodeTemplate->Rename(NULL, ParentGraph);
+		ParentGraph->AddNode(NodeTemplate, true, bSelectNewNode);
+
+		NodeTemplate->CreateNewGuid();
+		NodeTemplate->PostPlacedNewNode();
+		NodeTemplate->AllocateDefaultPins();
+		NodeTemplate->AutowireNewNode(FromPin);
+
+		NodeTemplate->NodePosX = Location.X;
+		NodeTemplate->NodePosY = Location.Y;
+		NodeTemplate->SnapToGrid(GetDefault<UEditorStyleSettings>()->GridSnapSize);
+
+		ResultNode = NodeTemplate;
+
+		ResultNode->SetFlags(RF_Transactional);
+	}
+
+	return ResultNode;
+}
+
+void FInputSMGraphSchemaAction_NewStateNode::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	FEdGraphSchemaAction::AddReferencedObjects(Collector);
+
+	// These don't get saved to disk, but we want to make sure the objects don't get GC'd while the action array is around
+	Collector.AddReferencedObject(NodeTemplate);
+}
 
 void UInputSMGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
@@ -15,10 +69,11 @@ void UInputSMGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	
 	SetNodeMetaData(MyNode, FNodeMetadata::DefaultGraphNode);
 
-	if (UInputSM* inputSM = Graph.GetTypedOuter<UInputSM>())
-	{
-		inputSM->GetNodes().Emplace();
-	}
+	////// TODO
+	//////if (UInputSM* inputSM = Graph.GetTypedOuter<UInputSM>())
+	//////{
+	//////	inputSM->GetNodes().Emplace();
+	//////}
 }
 
 const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const
@@ -27,6 +82,36 @@ const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdG
 	if (PinA->GetOwningNode() == PinB->GetOwningNode())
 	{
 		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Both are on the same node"));
+	}
+
+	// Connect entry node to a state is OK
+	const bool bPinAIsEntry = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Root::StaticClass());
+	const bool bPinBIsEntry = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Root::StaticClass());
+	const bool bPinAIsStateNode = PinA->GetOwningNode()->IsA(UInputSMGraphNode_State::StaticClass());
+	const bool bPinBIsStateNode = PinB->GetOwningNode()->IsA(UInputSMGraphNode_State::StaticClass());
+
+	if (bPinAIsEntry || bPinBIsEntry)
+	{
+		if (bPinAIsEntry && bPinBIsStateNode)
+		{
+			return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, TEXT(""));
+		}
+
+		if (bPinBIsEntry && bPinAIsStateNode)
+		{
+			return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_B, TEXT(""));
+		}
+
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Entry must connect to a state node"));
+	}
+
+
+	const bool bPinAIsTransition = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Transition::StaticClass());
+	const bool bPinBIsTransition = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Transition::StaticClass());
+
+	if (bPinAIsTransition && bPinBIsTransition)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Cannot wire a transition to a transition"));
 	}
 
 	// Compare the directions
@@ -41,48 +126,113 @@ const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdG
 		bDirectionsOK = true;
 	}
 
+	/*
 	if (!bDirectionsOK)
 	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT(""));
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Directions are not compatible"));
 	}
+	*/
 
-	if (UInputSMGraphNode_Base* graphNodeBase = Cast<UInputSMGraphNode_Base>(PinA->GetOwningNode()))
+	// Transitions are exclusive (both input and output), but states are not
+	if (bPinAIsTransition)
 	{
-		TArray<TObjectPtr<UEdGraphNode>>& nodes = graphNodeBase->GetGraph()->Nodes;
-		graphNodeBase->AddTransition(nodes.IndexOfByKey(PinB->GetOwningNode()), FInputFrameStack());
+		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, TEXT(""));
 	}
-
-	return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT(""));
+	else if (bPinBIsTransition)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_B, TEXT(""));
+	}
+	else if (!bPinAIsTransition && !bPinBIsTransition)
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE, TEXT("Create a transition"));
+	}
+	else
+	{
+		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT(""));
+	}
 }
 
-void UInputSMGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotifcation) const
+bool UInputSMGraphSchema::TryCreateConnection(UEdGraphPin* PinA, UEdGraphPin* PinB) const
 {
-	UEdGraphNode* targetNode = TargetPin.GetOwningNode();
-	int32 targetNodeIndex = targetNode->GetGraph()->Nodes.IndexOfByKey(targetNode);
-
-	for (UEdGraphPin* sourcePin : TargetPin.LinkedTo)
+	if (PinB->Direction == PinA->Direction)
 	{
-		UInputSMGraphNode_Base* sourceNode = Cast<UInputSMGraphNode_Base>(sourcePin->GetOwningNode());
-		if (sourceNode) sourceNode->RemoveTransition(targetNodeIndex, false);
+		if (UInputSMGraphNode_State* Node = Cast<UInputSMGraphNode_State>(PinB->GetOwningNode()))
+		{
+			if (PinA->Direction == EGPD_Input)
+			{
+				PinB = Node->GetOutputPin();
+			}
+			else
+			{
+				PinB = Node->GetInputPin();
+			}
+		}
 	}
 
-	Super::BreakPinLinks(TargetPin, bSendsNodeNotifcation);
+	return UEdGraphSchema::TryCreateConnection(PinA, PinB);
 }
 
-void UInputSMGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+bool UInputSMGraphSchema::CreateAutomaticConversionNodeAndConnections(UEdGraphPin* PinA, UEdGraphPin* PinB) const
 {
-	UEdGraphNode* targetNode = TargetPin->GetOwningNode();
-	int32 targetNodeIndex = targetNode->GetGraph()->Nodes.IndexOfByKey(targetNode);
+	UInputSMGraphNode_State* NodeA = Cast<UInputSMGraphNode_State>(PinA->GetOwningNode());
+	UInputSMGraphNode_State* NodeB = Cast<UInputSMGraphNode_State>(PinB->GetOwningNode());
 
-	UInputSMGraphNode_Base* sourceNode = Cast<UInputSMGraphNode_Base>(SourcePin->GetOwningNode());
-	if (sourceNode) sourceNode->RemoveTransition(targetNodeIndex, false);
+	if ((NodeA != NULL) && (NodeB != NULL)
+		&& (NodeA->GetInputPin() != NULL) && (NodeA->GetOutputPin() != NULL)
+		&& (NodeB->GetInputPin() != NULL) && (NodeB->GetOutputPin() != NULL))
+	{
+		UInputSMGraphNode_Transition* TransitionNode = FInputSMGraphSchemaAction_NewStateNode::SpawnNodeFromTemplate<UInputSMGraphNode_Transition>(NodeA->GetGraph(), NewObject<UInputSMGraphNode_Transition>(), FVector2D(0.0f, 0.0f), false);
 
-	Super::BreakSinglePinLink(SourcePin, TargetPin);
+		if (PinA->Direction == EGPD_Output)
+		{
+			TransitionNode->CreateConnections(NodeA, NodeB);
+		}
+		else
+		{
+			TransitionNode->CreateConnections(NodeB, NodeA);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+void UInputSMGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
+{
+	// Add state node
+	{
+		TSharedPtr<FInputSMGraphSchemaAction_NewStateNode> Action = AddNewActionAs<FInputSMGraphSchemaAction_NewStateNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddState", "Add State..."), LOCTEXT("AddStateTooltip", "A new state"));
+		Action->NodeTemplate = NewObject<UInputSMGraphNode_State>(ContextMenuBuilder.OwnerOfTemporaries);
+	}
+
+	// Entry point (only if doesn't already exist)
+	{
+		bool bHasEntry = false;
+		for (auto NodeIt = ContextMenuBuilder.CurrentGraph->Nodes.CreateConstIterator(); NodeIt; ++NodeIt)
+		{
+			UEdGraphNode* Node = *NodeIt;
+			if (const UInputSMGraphNode_Root* StateNode = Cast<UInputSMGraphNode_Root>(Node))
+			{
+				bHasEntry = true;
+				break;
+			}
+		}
+
+		if (!bHasEntry)
+		{
+			TSharedPtr<FInputSMGraphSchemaAction_NewStateNode> Action = AddNewActionAs<FInputSMGraphSchemaAction_NewStateNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddRoot", "Add Root..."), LOCTEXT("AddRootTooltip", "Define State Machine's Root"));
+			Action->NodeTemplate = NewObject<UInputSMGraphNode_Root>(ContextMenuBuilder.OwnerOfTemporaries);
+		}
+	}
 }
 
 void UInputSMGraphSchema::DroppedAssetsOnGraph(const TArray<struct FAssetData>& Assets, const FVector2D& GraphPosition, UEdGraph* Graph) const
 {
 	UInputSMGraph* inputSMGraph = CastChecked<UInputSMGraph>(Graph);
+
+	float NodePosX = GraphPosition.X;
+	float NodePosY = GraphPosition.Y;
 
 	for (int32 AssetIdx = 0; AssetIdx < Assets.Num(); ++AssetIdx)
 	{
@@ -92,27 +242,51 @@ void UInputSMGraphSchema::DroppedAssetsOnGraph(const TArray<struct FAssetData>& 
 
 			inputSMGraph->Modify();
 
-			float NodePosX = GraphPosition.X;
-			float NodePosY = GraphPosition.Y;
-
 			FGraphNodeCreator<UInputSMGraphNode_State> NodeCreator(*inputSMGraph);
 			UInputSMGraphNode_State* MyNode = NodeCreator.CreateNode(true);
 			MyNode->NodePosX = NodePosX;
 			MyNode->NodePosY = NodePosY;
 			NodeCreator.Finalize();
 
-			if (UInputSM* inputSM = Graph->GetTypedOuter<UInputSM>())
-			{
-				inputSM->GetNodes().Emplace();
-			}
+			////// TODO
+			//////if (UInputSM* inputSM = Graph->GetTypedOuter<UInputSM>())
+			//////{
+			//////	inputSM->GetNodes().Emplace();
+			//////}
 
-			MyNode->SetNodeAsset(asset);
+			MyNode->SetStateAsset(asset);
 
-			NodePosY += 400;
+			NodePosY += 300;
 
 			inputSMGraph->NotifyGraphChanged();
 		}
 	}
+}
+
+void UInputSMGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
+{
+	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakNodeLinks", "Break Node Links"));
+
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(&TargetNode);
+	Super::BreakNodeLinks(TargetNode);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+}
+
+void UInputSMGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
+{
+	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakPinLinks", "Break Pin Links"));
+	// cache this here, as BreakPinLinks can trigger a node reconstruction invalidating the TargetPin references
+	UBlueprint* const Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(TargetPin.GetOwningNode());
+	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
+}
+
+void UInputSMGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
+{
+	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakSinglePinLink", "Break Pin Link"));
+	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(TargetPin->GetOwningNode());
+	Super::BreakSinglePinLink(SourcePin, TargetPin);
+	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
 #undef LOCTEXT_NAMESPACE

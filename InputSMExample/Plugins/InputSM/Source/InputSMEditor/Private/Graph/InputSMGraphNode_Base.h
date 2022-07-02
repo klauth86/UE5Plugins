@@ -13,27 +13,9 @@ class UInputSMGraphNode_Base : public UEdGraphNode
 
 public:
 
-	bool CanCreateUnderSpecifiedSchema(const UEdGraphSchema* DesiredSchema) const override;
+	virtual bool CanCreateUnderSpecifiedSchema(const UEdGraphSchema* DesiredSchema) const override;
 
-	void DestroyNode() override;
-
-	void AddTransition(int32 indexB, const FInputFrameStack& activationStack);
-
-	void RemoveTransition(int32 indexB, bool decrementOthers);
-
-	UObject* GetNodeAsset() const { return NodeAsset; }
-
-	void SetNodeAsset(UObject* nodeAsset);
-
-	TArray<FInputSMTransition>& GetTransitions() { return Transitions; }
-
-protected:
-
-	UPROPERTY()
-		UObject* NodeAsset;
-
-	UPROPERTY()
-		TArray<FInputSMTransition> Transitions;
+	void GetTransitionList(TArray<UInputSMGraphNode_Transition*>& OutTransitions, bool bWantSortedList = false) const;
 };
 
 UCLASS()
@@ -43,13 +25,17 @@ class UInputSMGraphNode_Root : public UInputSMGraphNode_Base
 
 public:
 
+	virtual void AllocateDefaultPins() override;
+
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+
 	virtual bool CanDuplicateNode() const override { return false; }
 
 	virtual bool CanUserDeleteNode() const override { return false; }
 
-	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+	UEdGraphNode* GetOutputNode() const;
 
-	virtual void AllocateDefaultPins() override;
+	static const FName RootOutputPinName;
 };
 
 UCLASS()
@@ -59,7 +45,47 @@ class UInputSMGraphNode_State : public UInputSMGraphNode_Base
 
 public:
 
+	virtual void AllocateDefaultPins() override;
+
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 
+	UEdGraphPin* GetInputPin() const { return Pins[0]; }
+	
+	UEdGraphPin* GetOutputPin() const { return Pins[1]; }
+
+	void SetStateAsset(UObject* stateAsset) { StateAsset = stateAsset; }
+
+protected:
+
+	UPROPERTY()
+		UObject* StateAsset;
+};
+
+UCLASS()
+class UInputSMGraphNode_Transition : public UInputSMGraphNode_Base
+{
+	GENERATED_BODY()
+
+public:
+
 	virtual void AllocateDefaultPins() override;
+
+	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
+
+	UInputSMGraphNode_State* GetPreviousState() const;
+
+	UInputSMGraphNode_State* GetNextState() const;
+
+	void CreateConnections(UInputSMGraphNode_State* PreviousState, UInputSMGraphNode_State* NextState);
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = Transition)
+		int32 PriorityOrder;
+
+	UPROPERTY(EditAnywhere, Category = Transition)
+		bool Bidirectional;
+
+	UPROPERTY(EditAnywhere, Category = Transition)
+		FInputFrameStack ActivationStack;
 };

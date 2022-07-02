@@ -4,6 +4,10 @@
 
 #include "Modules/ModuleManager.h"
 
+struct FInputSMGraphNodeFactory;
+struct FInputSMGraphPinFactory;
+struct FInputSMGraphPinConnectionFactory;
+
 class FInputSMEditorModule : public IModuleInterface
 {
 public:
@@ -12,4 +16,8 @@ public:
 
 private:
 	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
+
+	TSharedPtr<FInputSMGraphNodeFactory> InputSMGraphNodeFactory;
+	TSharedPtr<FInputSMGraphPinFactory> InputSMGraphPinFactory;
+	TSharedPtr<FInputSMGraphPinConnectionFactory> InputSMGraphPinConnectionFactory;
 };

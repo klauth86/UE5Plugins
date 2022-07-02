@@ -84,7 +84,7 @@ public:
 
 protected:
 
-	virtual void FixupPastedNodes(UEdGraph* graph, const TSet<UEdGraphNode*>& NewPastedGraphNodes, const TMap<FGuid/*New*/, FGuid/*Old*/>& NewToOldNodeMapping);
+	void FixupPastedNodes(UEdGraph* graph, const TSet<UEdGraphNode*>& NewPastedGraphNodes, const TMap<FGuid/*New*/, FGuid/*Old*/>& NewToOldNodeMapping);
 
 protected:
 

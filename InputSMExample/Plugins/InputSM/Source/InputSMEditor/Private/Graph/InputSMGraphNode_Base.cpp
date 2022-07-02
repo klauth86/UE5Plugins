@@ -8,93 +8,135 @@ bool UInputSMGraphNode_Base::CanCreateUnderSpecifiedSchema(const UEdGraphSchema*
 	return DesiredSchema->GetClass()->IsChildOf(UInputSMGraphSchema::StaticClass());
 }
 
-void UInputSMGraphNode_Base::DestroyNode()
+void UInputSMGraphNode_Base::GetTransitionList(TArray<UInputSMGraphNode_Transition*>& OutTransitions, bool bWantSortedList /*= false*/) const
 {
-	TArray<TObjectPtr<UEdGraphNode>> graphNodes = GetGraph()->Nodes;
+    // Normal transitions
+    for (int32 LinkIndex = 0; LinkIndex < Pins[1]->LinkedTo.Num(); ++LinkIndex)
+    {
+        UEdGraphNode* TargetNode = Pins[1]->LinkedTo[LinkIndex]->GetOwningNode();
+        if (UInputSMGraphNode_Transition* Transition = Cast<UInputSMGraphNode_Transition>(TargetNode))
+        {
+            OutTransitions.Add(Transition);
+        }
+    }
 
-	for (UEdGraphNode* graphNode : graphNodes)
-	{
-		if (UInputSMGraphNode_Base* graphNodeBase = Cast<UInputSMGraphNode_Base>(graphNode))
-		{
-			graphNodeBase->RemoveTransition(graphNodes.IndexOfByKey(this), true);
-		}
-	}
+    // Bidirectional transitions where we are the 'backwards' link.
+    // Conduits and other states types that don't support bidirectional transitions should hide it from the details panel.
+    for (int32 LinkIndex = 0; LinkIndex < Pins[0]->LinkedTo.Num(); ++LinkIndex)
+    {
+        UEdGraphNode* TargetNode = Pins[0]->LinkedTo[LinkIndex]->GetOwningNode();
+        if (UInputSMGraphNode_Transition* Transition = Cast<UInputSMGraphNode_Transition>(TargetNode))
+        {
+            // Anim state nodes that don't support bidirectional transitions should hide this property in FAnimTransitionNodeDetails::CustomizeDetails
+            if (Transition->Bidirectional)
+            {
+                OutTransitions.Add(Transition);
+            }
+        }
+    }
 
-	Super::DestroyNode();
+    // Sort the transitions by priority order, lower numbers are higher priority
+    if (bWantSortedList)
+    {
+        struct FCompareTransitionsByPriority
+        {
+            FORCEINLINE bool operator()(const UInputSMGraphNode_Transition& A, const UInputSMGraphNode_Transition& B) const
+            {
+                return A.PriorityOrder < B.PriorityOrder;
+            }
+        };
+
+        OutTransitions.Sort(FCompareTransitionsByPriority());
+    }
 }
-
-void UInputSMGraphNode_Base::AddTransition(int32 indexB, const FInputFrameStack& activationStack)
-{
-	int32 emplacedIndex = Transitions.Emplace();
-	
-	Transitions[emplacedIndex].TargetIndex = indexB;
-	Transitions[emplacedIndex].ActivationStack = activationStack;
-
-	if (UInputSM* inputSM = GetTypedOuter<UInputSM>())
-	{
-		FInputSMNode& inputSMNode = inputSM->GetNodes()[GetGraph()->Nodes.IndexOfByKey(this)];
-		
-		emplacedIndex = inputSMNode.Transitions.Emplace();
-		
-		inputSMNode.Transitions[emplacedIndex].TargetIndex = indexB;
-		inputSMNode.Transitions[emplacedIndex].ActivationStack = activationStack;
-	}
-}
-
-void UInputSMGraphNode_Base::RemoveTransition(int32 indexB, bool decrementOthers)
-{
-	Transitions.RemoveAll([indexB](const FInputSMTransition& transition) { return transition.TargetIndex == indexB; });
-
-	if (decrementOthers)
-	{
-		for (FInputSMTransition& transition : Transitions)
-		{
-			if (transition.TargetIndex >= indexB)
-			{
-				transition.TargetIndex--;
-			}
-		}
-	}
-
-	if (UInputSM* inputSM = GetTypedOuter<UInputSM>())
-	{
-		FInputSMNode& inputSMNode = inputSM->GetNodes()[GetGraph()->Nodes.IndexOfByKey(this)];
-		
-		inputSMNode.Transitions.RemoveAll([indexB](const FInputSMTransition& transition) { return transition.TargetIndex == indexB; });
-
-		if (decrementOthers)
-		{
-			for (FInputSMTransition& transition : inputSMNode.Transitions)
-			{
-				if (transition.TargetIndex >= indexB)
-				{
-					transition.TargetIndex--;
-				}
-			}
-		}
-	}
-}
-
-void UInputSMGraphNode_Base::SetNodeAsset(UObject* nodeAsset)
-{
-	if (UInputSM* inputSM = GetTypedOuter<UInputSM>())
-	{
-		NodeAsset = nodeAsset;
-		inputSM->GetNodes()[GetGraph()->Nodes.IndexOfByKey(this)].NodeAsset = nodeAsset;
-	}
-}
-
-FText UInputSMGraphNode_Root::GetNodeTitle(ENodeTitleType::Type TitleType) const { return NSLOCTEXT("UInputSMGraphNode_Root", "NodeTitle", "ENTRY"); }
 
 void UInputSMGraphNode_Root::AllocateDefaultPins()
 {
-	UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Next"));
+    UEdGraphPin* Outputs = CreatePin(EGPD_Output, RootOutputPinName, TEXT("Entry"));
 }
 
-FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const { return NSLOCTEXT("UInputSMGraphNode_State", "NodeTitle", "State"); }
+UEdGraphNode* UInputSMGraphNode_Root::GetOutputNode() const
+{
+	if (Pins.Num() > 0 && Pins[0] != NULL)
+	{
+		check(Pins[0]->LinkedTo.Num() <= 1);
+		if (Pins[0]->LinkedTo.Num() > 0 && Pins[0]->LinkedTo[0]->GetOwningNode() != NULL)
+		{
+			return Pins[0]->LinkedTo[0]->GetOwningNode();
+		}
+	}
+	return NULL;
+}
+
+FText UInputSMGraphNode_Root::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromString(GetGraph()->GetName()); }
+
+const FName UInputSMGraphNode_Root::RootOutputPinName("RootOutputPin");
 
 void UInputSMGraphNode_State::AllocateDefaultPins()
 {
+    UEdGraphPin* Inputs = CreatePin(EGPD_Input, TEXT("Transition"), TEXT("In"));
+    UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Out"));
+}
+
+FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromString(GetName()); }
+
+void UInputSMGraphNode_Transition::AllocateDefaultPins()
+{
 	UEdGraphPin* Inputs = CreatePin(EGPD_Input, TEXT("Transition"), TEXT("In"));
-	UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Next"));
+	Inputs->bHidden = true;
+	UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Out"));
+	Outputs->bHidden = true;
+}
+
+FText UInputSMGraphNode_Transition::GetNodeTitle(ENodeTitleType::Type TitleType) const
+{
+	UInputSMGraphNode_State* PrevState = GetPreviousState();
+	UInputSMGraphNode_State* NextState = GetNextState();
+
+	FFormatNamedArguments Args;
+	Args.Add(TEXT("PrevState"), FText::FromString(PrevState ? PrevState->GetName() : "???"));
+	Args.Add(TEXT("NextState"), FText::FromString(NextState ? NextState->GetName() : "???"));
+
+	return FText::Format(NSLOCTEXT("UInputSMGraphNode_Transition", "PrevStateToNewState", "{PrevState} => {NextState}"), Args);
+}
+
+UInputSMGraphNode_State* UInputSMGraphNode_Transition::GetPreviousState() const
+{
+	if (Pins[0]->LinkedTo.Num() > 0)
+	{
+		return Cast<UInputSMGraphNode_State>(Pins[0]->LinkedTo[0]->GetOwningNode());
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+UInputSMGraphNode_State* UInputSMGraphNode_Transition::GetNextState() const
+{
+	if (Pins[1]->LinkedTo.Num() > 0)
+	{
+		return Cast<UInputSMGraphNode_State>(Pins[1]->LinkedTo[0]->GetOwningNode());
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
+void UInputSMGraphNode_Transition::CreateConnections(UInputSMGraphNode_State* PreviousState, UInputSMGraphNode_State* NextState)
+{
+	// Previous to this
+	Pins[0]->Modify();
+	Pins[0]->LinkedTo.Empty();
+
+	PreviousState->GetOutputPin()->Modify();
+	Pins[0]->MakeLinkTo(PreviousState->GetOutputPin());
+
+	// This to next
+	Pins[1]->Modify();
+	Pins[1]->LinkedTo.Empty();
+
+	NextState->GetInputPin()->Modify();
+	Pins[1]->MakeLinkTo(NextState->GetInputPin());
 }

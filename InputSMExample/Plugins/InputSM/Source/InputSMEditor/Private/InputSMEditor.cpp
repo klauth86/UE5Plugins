@@ -2,7 +2,6 @@
 #include "Framework/Application/SlateApplication.h"
 #include "Editor/EditorEngine.h"
 #include "EngineGlobals.h"
-#include "InputSM.h"
 #include "Graph/InputSMGraph.h"
 #include "Graph/InputSMGraphNode_Base.h"
 #include "ScopedTransaction.h"
@@ -17,6 +16,7 @@
 const FName FInputSMEditor::InputSMAppIdentifier(TEXT("InputSMApp"));
 
 const FName FInputSMEditor::InputSMPropertiesTabId(TEXT("InputSM_PropertiesTab"));
+
 const FName FInputSMEditor::InputSMGraphTabId(TEXT("InputSM_GraphTab"));
 
 void FInputSMEditor::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
@@ -593,40 +593,41 @@ void FInputSMEditor::PasteNodesHere(const FVector2D& Location)
 
 void FInputSMEditor::FixupPastedNodes(UEdGraph* graph, const TSet<UEdGraphNode*>& PastedGraphNodes, const TMap<FGuid/*New*/, FGuid/*Old*/>& NewToOldNodeMapping)
 {
-	for (UEdGraphNode* node : PastedGraphNodes)
-	{
-		if (UInputSMGraphNode_Base* graphNodeBase = Cast<UInputSMGraphNode_Base>(node))
-		{
-			TMap<UEdGraphNode*, FInputFrameStack> inputMapping;
-			for (const FInputSMTransition& transition : graphNodeBase->GetTransitions())
-			{
-				if (graph->Nodes.IsValidIndex(transition.TargetIndex)) inputMapping.Add(graph->Nodes[transition.TargetIndex], transition.ActivationStack);
-			}
+	////// TODO
+	//////for (UEdGraphNode* node : PastedGraphNodes)
+	//////{
+	//////	if (UInputSMGraphNode_Base* graphNodeBase = Cast<UInputSMGraphNode_Base>(node))
+	//////	{
+	//////		TMap<UEdGraphNode*, FInputFrameStack> inputMapping;
+	//////		for (const FInputSMTransition& transition : graphNodeBase->GetTransitions())
+	//////		{
+	//////			if (graph->Nodes.IsValidIndex(transition.TargetIndex)) inputMapping.Add(graph->Nodes[transition.TargetIndex], transition.ActivationStack);
+	//////		}
 
-			graphNodeBase->GetTransitions().Reset(graphNodeBase->GetTransitions().Num());
+	//////		graphNodeBase->GetTransitions().Reset(graphNodeBase->GetTransitions().Num());
 
-			for (UEdGraphPin* pin : graphNodeBase->Pins)
-			{
-				if (pin->Direction == EGPD_Output)
-				{
-					for (UEdGraphPin* linkedToPin : pin->LinkedTo)
-					{
-						UEdGraphNode* linkedToNode = linkedToPin->GetOwningNode();
-						int32 linkedToNodeIndex = graph->Nodes.IndexOfByKey(linkedToNode);
+	//////		for (UEdGraphPin* pin : graphNodeBase->Pins)
+	//////		{
+	//////			if (pin->Direction == EGPD_Output)
+	//////			{
+	//////				for (UEdGraphPin* linkedToPin : pin->LinkedTo)
+	//////				{
+	//////					UEdGraphNode* linkedToNode = linkedToPin->GetOwningNode();
+	//////					int32 linkedToNodeIndex = graph->Nodes.IndexOfByKey(linkedToNode);
 
-						if (inputMapping.Contains(linkedToNode))
-						{
-							graphNodeBase->AddTransition(linkedToNodeIndex, inputMapping[linkedToNode]);
-						}
-						else
-						{
-							graphNodeBase->AddTransition(linkedToNodeIndex, FInputFrameStack());
-						}
-					}
-				}
-			}
-		}
-	}
+	//////					if (inputMapping.Contains(linkedToNode))
+	//////					{
+	//////						graphNodeBase->AddTransition(linkedToNodeIndex, inputMapping[linkedToNode]);
+	//////					}
+	//////					else
+	//////					{
+	//////						graphNodeBase->AddTransition(linkedToNodeIndex, FInputFrameStack());
+	//////					}
+	//////				}
+	//////			}
+	//////		}
+	//////	}
+	//////}
 }
 
 bool FInputSMEditor::CanPasteNodes() const
