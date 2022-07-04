@@ -4,15 +4,15 @@
 
 #include "SGraphNode.h"
 
-class UInputSMGraphNode_Root;
+class UInputSMGraphNode_Entry;
 
-class INPUTSMEDITOR_API SInputSMGraphNode_Root : public SGraphNode
+class INPUTSMEDITOR_API SInputSMGraphNode_Entry : public SGraphNode
 {
 public:
-	SLATE_BEGIN_ARGS(SInputSMGraphNode_Root) {}
+	SLATE_BEGIN_ARGS(SInputSMGraphNode_Entry) {}
 	SLATE_END_ARGS()
 
-		void Construct(const FArguments& InArgs, UInputSMGraphNode_Root* InNode);
+		void Construct(const FArguments& InArgs, UInputSMGraphNode_Entry* InNode);
 
 	// SNodePanel::SNode interface
 	virtual void GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const override {}

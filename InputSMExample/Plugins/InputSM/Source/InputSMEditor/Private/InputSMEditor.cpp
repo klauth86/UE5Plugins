@@ -83,7 +83,7 @@ void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr<
 	TSharedPtr<SGraphEditor> UpdateGraphEditor = UpdateGraphEdPtr.Pin();
 	if (UpdateGraphEditor.IsValid() && UpdateGraphEditor->GetCurrentGraph() != NULL)
 	{
-		// let's find root node
+		// let's find Entry node
 		UInputSMGraph* graph = Cast<UInputSMGraph>(UpdateGraphEditor->GetCurrentGraph());
 		graph->UpdateAsset();
 	}
@@ -102,7 +102,7 @@ void FInputSMEditor::SaveAsset_Execute()
 	TSharedPtr<SGraphEditor> UpdateGraphEditor = UpdateGraphEdPtr.Pin();
 	if (UpdateGraphEditor.IsValid() && UpdateGraphEditor->GetCurrentGraph() != NULL)
 	{
-		// let's find root node
+		// let's find Entry node
 		UInputSMGraph* graph = Cast<UInputSMGraph>(UpdateGraphEditor->GetCurrentGraph());
 		graph->UpdateAsset();
 	}

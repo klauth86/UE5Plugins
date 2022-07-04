@@ -19,7 +19,7 @@ public:
 };
 
 UCLASS()
-class UInputSMGraphNode_Root : public UInputSMGraphNode_Base
+class UInputSMGraphNode_Entry : public UInputSMGraphNode_Base
 {
 	GENERATED_BODY()
 
@@ -35,7 +35,7 @@ public:
 
 	UEdGraphNode* GetOutputNode() const;
 
-	static const FName RootOutputPinName;
+	static const FName EntryOutputPinName;
 };
 
 UCLASS()
@@ -57,7 +57,10 @@ public:
 
 protected:
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = State)
+		FName StateName;
+
+	UPROPERTY(EditAnywhere, Category = State)
 		UObject* StateAsset;
 };
 
@@ -82,9 +85,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Transition)
 		int32 PriorityOrder;
-
-	UPROPERTY(EditAnywhere, Category = Transition)
-		bool Bidirectional;
 
 	UPROPERTY(EditAnywhere, Category = Transition)
 		FInputFrameStack ActivationStack;

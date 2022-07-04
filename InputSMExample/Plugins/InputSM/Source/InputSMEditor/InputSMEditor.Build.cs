@@ -44,6 +44,8 @@ public class InputSMEditor : ModuleRules
 				"ApplicationCore",
 				"GraphEditor",
 				"EditorStyle",
+				"PropertyEditor",
+
 				"InputSM",
 				// ... add private dependencies that you statically link with here ...	
 			}

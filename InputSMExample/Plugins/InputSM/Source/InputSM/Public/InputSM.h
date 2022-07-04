@@ -14,9 +14,17 @@ struct INPUTSM_API FInputFrame
 
 public:
 
+	static const uint16 PRESS_MASK = 0b01;
+	static const uint16 HOLD_MASK = 0b10;
+	static const uint16 FULL_MASK = 0b11;
+
 	FInputFrame() { Reset(); }
 
 	void Reset() { LeftStickHor = LeftStickVer = RightStickHor = RightStickVer = 0; PackedBits = 0; }
+
+	void Reset_LeftStick() { LeftStickHor = LeftStickVer = 0; }
+
+	void Reset_RightStick() { RightStickHor = RightStickVer = 0; }
 
 	UPROPERTY()
 	float LeftStickHor;

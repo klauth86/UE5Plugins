@@ -1,15 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Graph/SInputSMGraphNode_Root.h"
+#include "Graph/SInputSMGraphNode_Entry.h"
 
-void SInputSMGraphNode_Root::Construct(const FArguments& InArgs, UInputSMGraphNode_Root* InNode)
+void SInputSMGraphNode_Entry::Construct(const FArguments& InArgs, UInputSMGraphNode_Entry* InNode)
 {
 	GraphNode = InNode;
 	SetCursor(EMouseCursor::CardinalCross);
 	UpdateGraphNode();
 }
 
-FSlateColor SInputSMGraphNode_Root::GetBorderBackgroundColor() const
+FSlateColor SInputSMGraphNode_Entry::GetBorderBackgroundColor() const
 {
 	FLinearColor InactiveStateColor(0.08f, 0.08f, 0.08f);
 	FLinearColor ActiveStateColorDim(0.4f, 0.3f, 0.15f);
@@ -18,7 +18,7 @@ FSlateColor SInputSMGraphNode_Root::GetBorderBackgroundColor() const
 	return InactiveStateColor;
 }
 
-void SInputSMGraphNode_Root::UpdateGraphNode()
+void SInputSMGraphNode_Entry::UpdateGraphNode()
 {
 	InputPins.Empty();
 	OutputPins.Empty();
@@ -37,26 +37,17 @@ void SInputSMGraphNode_Root::UpdateGraphNode()
 		[
 			SNew(SBorder)
 			.BorderImage(FEditorStyle::GetBrush("Graph.StateNode.Body"))
-		.Padding(0)
-		.BorderBackgroundColor(this, &SInputSMGraphNode_Root::GetBorderBackgroundColor)
-		[
-			SNew(SOverlay)
-
-			// PIN AREA
-		+ SOverlay::Slot()
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Fill)
-		.Padding(10.0f)
+		.Padding(10)
+		.BorderBackgroundColor(this, &SInputSMGraphNode_Entry::GetBorderBackgroundColor)
 		[
 			SAssignNew(RightNodeBox, SVerticalBox)
-		]
 		]
 		];
 
 	CreatePinWidgets();
 }
 
-void SInputSMGraphNode_Root::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
+void SInputSMGraphNode_Entry::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 {
 	PinToAdd->SetOwner(SharedThis(this));
 	RightNodeBox->AddSlot()
@@ -69,7 +60,7 @@ void SInputSMGraphNode_Root::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 	OutputPins.Add(PinToAdd);
 }
 
-FText SInputSMGraphNode_Root::GetPreviewCornerText() const
+FText SInputSMGraphNode_Entry::GetPreviewCornerText() const
 {
-	return NSLOCTEXT("SInputSMGraphNode_Root", "CornerTextDescription", "Entry point for state machine");
+	return NSLOCTEXT("SInputSMGraphNode_Entry", "CornerTextDescription", "Entry point for state machine");
 }

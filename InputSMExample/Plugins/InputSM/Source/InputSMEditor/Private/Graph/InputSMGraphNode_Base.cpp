@@ -20,21 +20,6 @@ void UInputSMGraphNode_Base::GetTransitionList(TArray<UInputSMGraphNode_Transiti
         }
     }
 
-    // Bidirectional transitions where we are the 'backwards' link.
-    // Conduits and other states types that don't support bidirectional transitions should hide it from the details panel.
-    for (int32 LinkIndex = 0; LinkIndex < Pins[0]->LinkedTo.Num(); ++LinkIndex)
-    {
-        UEdGraphNode* TargetNode = Pins[0]->LinkedTo[LinkIndex]->GetOwningNode();
-        if (UInputSMGraphNode_Transition* Transition = Cast<UInputSMGraphNode_Transition>(TargetNode))
-        {
-            // Anim state nodes that don't support bidirectional transitions should hide this property in FAnimTransitionNodeDetails::CustomizeDetails
-            if (Transition->Bidirectional)
-            {
-                OutTransitions.Add(Transition);
-            }
-        }
-    }
-
     // Sort the transitions by priority order, lower numbers are higher priority
     if (bWantSortedList)
     {
@@ -50,12 +35,12 @@ void UInputSMGraphNode_Base::GetTransitionList(TArray<UInputSMGraphNode_Transiti
     }
 }
 
-void UInputSMGraphNode_Root::AllocateDefaultPins()
+void UInputSMGraphNode_Entry::AllocateDefaultPins()
 {
-    UEdGraphPin* Outputs = CreatePin(EGPD_Output, RootOutputPinName, TEXT("Entry"));
+    UEdGraphPin* Outputs = CreatePin(EGPD_Output, EntryOutputPinName, TEXT("Entry"));
 }
 
-UEdGraphNode* UInputSMGraphNode_Root::GetOutputNode() const
+UEdGraphNode* UInputSMGraphNode_Entry::GetOutputNode() const
 {
 	if (Pins.Num() > 0 && Pins[0] != NULL)
 	{
@@ -68,9 +53,9 @@ UEdGraphNode* UInputSMGraphNode_Root::GetOutputNode() const
 	return NULL;
 }
 
-FText UInputSMGraphNode_Root::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromString(GetGraph()->GetName()); }
+FText UInputSMGraphNode_Entry::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromString(GetGraph()->GetName()); }
 
-const FName UInputSMGraphNode_Root::RootOutputPinName("RootOutputPin");
+const FName UInputSMGraphNode_Entry::EntryOutputPinName("RootOutputPin");
 
 void UInputSMGraphNode_State::AllocateDefaultPins()
 {
@@ -78,7 +63,7 @@ void UInputSMGraphNode_State::AllocateDefaultPins()
     UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Out"));
 }
 
-FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromString(GetName()); }
+FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromName(StateName); }
 
 void UInputSMGraphNode_Transition::AllocateDefaultPins()
 {

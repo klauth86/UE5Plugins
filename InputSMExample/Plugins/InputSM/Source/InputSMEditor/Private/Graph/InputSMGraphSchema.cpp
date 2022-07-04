@@ -5,7 +5,6 @@
 #include "Graph/InputSMGraphNode_Base.h"
 #include "Graph/InputSMGraphSchemaAction_NewStateNode.h"
 #include "Classes/EditorStyleSettings.h"
-#include "Kismet2/BlueprintEditorUtils.h"
 #include "EdGraphUtilities.h"
 
 #define LOCTEXT_NAMESPACE "UInputSMGraphSchema"
@@ -63,8 +62,8 @@ void FInputSMGraphSchemaAction_NewStateNode::AddReferencedObjects(FReferenceColl
 
 void UInputSMGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
-	FGraphNodeCreator<UInputSMGraphNode_Root> NodeCreator(Graph);
-	UInputSMGraphNode_Root* MyNode = NodeCreator.CreateNode();
+	FGraphNodeCreator<UInputSMGraphNode_Entry> NodeCreator(Graph);
+	UInputSMGraphNode_Entry* MyNode = NodeCreator.CreateNode();
 	NodeCreator.Finalize();
 	
 	SetNodeMetaData(MyNode, FNodeMetadata::DefaultGraphNode);
@@ -85,8 +84,8 @@ const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdG
 	}
 
 	// Connect entry node to a state is OK
-	const bool bPinAIsEntry = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Root::StaticClass());
-	const bool bPinBIsEntry = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Root::StaticClass());
+	const bool bPinAIsEntry = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Entry::StaticClass());
+	const bool bPinBIsEntry = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Entry::StaticClass());
 	const bool bPinAIsStateNode = PinA->GetOwningNode()->IsA(UInputSMGraphNode_State::StaticClass());
 	const bool bPinBIsStateNode = PinB->GetOwningNode()->IsA(UInputSMGraphNode_State::StaticClass());
 
@@ -212,7 +211,7 @@ void UInputSMGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Conte
 		for (auto NodeIt = ContextMenuBuilder.CurrentGraph->Nodes.CreateConstIterator(); NodeIt; ++NodeIt)
 		{
 			UEdGraphNode* Node = *NodeIt;
-			if (const UInputSMGraphNode_Root* StateNode = Cast<UInputSMGraphNode_Root>(Node))
+			if (const UInputSMGraphNode_Entry* StateNode = Cast<UInputSMGraphNode_Entry>(Node))
 			{
 				bHasEntry = true;
 				break;
@@ -221,8 +220,8 @@ void UInputSMGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& Conte
 
 		if (!bHasEntry)
 		{
-			TSharedPtr<FInputSMGraphSchemaAction_NewStateNode> Action = AddNewActionAs<FInputSMGraphSchemaAction_NewStateNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddRoot", "Add Root..."), LOCTEXT("AddRootTooltip", "Define State Machine's Root"));
-			Action->NodeTemplate = NewObject<UInputSMGraphNode_Root>(ContextMenuBuilder.OwnerOfTemporaries);
+			TSharedPtr<FInputSMGraphSchemaAction_NewStateNode> Action = AddNewActionAs<FInputSMGraphSchemaAction_NewStateNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddEntry", "Add Entry..."), LOCTEXT("AddRootTooltip", "Define State Machine's Root"));
+			Action->NodeTemplate = NewObject<UInputSMGraphNode_Entry>(ContextMenuBuilder.OwnerOfTemporaries);
 		}
 	}
 }
@@ -261,32 +260,6 @@ void UInputSMGraphSchema::DroppedAssetsOnGraph(const TArray<struct FAssetData>& 
 			inputSMGraph->NotifyGraphChanged();
 		}
 	}
-}
-
-void UInputSMGraphSchema::BreakNodeLinks(UEdGraphNode& TargetNode) const
-{
-	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakNodeLinks", "Break Node Links"));
-
-	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(&TargetNode);
-	Super::BreakNodeLinks(TargetNode);
-	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-}
-
-void UInputSMGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotification) const
-{
-	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakPinLinks", "Break Pin Links"));
-	// cache this here, as BreakPinLinks can trigger a node reconstruction invalidating the TargetPin references
-	UBlueprint* const Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(TargetPin.GetOwningNode());
-	Super::BreakPinLinks(TargetPin, bSendsNodeNotification);
-	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
-}
-
-void UInputSMGraphSchema::BreakSinglePinLink(UEdGraphPin* SourcePin, UEdGraphPin* TargetPin) const
-{
-	const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "GraphEd_BreakSinglePinLink", "Break Pin Link"));
-	UBlueprint* Blueprint = FBlueprintEditorUtils::FindBlueprintForNodeChecked(TargetPin->GetOwningNode());
-	Super::BreakSinglePinLink(SourcePin, TargetPin);
-	FBlueprintEditorUtils::MarkBlueprintAsModified(Blueprint);
 }
 
 #undef LOCTEXT_NAMESPACE

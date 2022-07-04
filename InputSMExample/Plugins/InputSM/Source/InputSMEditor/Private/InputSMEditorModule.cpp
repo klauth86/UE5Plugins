@@ -4,10 +4,15 @@
 #include "AssetToolsModule.h"
 #include "ATActions/ATActions_InputSM.h"
 #include "Graph/InputSMGraphNodeFactory.h"
+#include "PropertyEditorModule.h"
+#include "InputSM.h"
+#include "Details/PTCustomization_IFS.h"
 
 #define LOCTEXT_NAMESPACE "FInputSMEditorModule"
 
 const FName AssetToolsModuleName("AssetTools");
+
+const FName PropertyEditorModuleName("PropertyEditor");
 
 void FInputSMEditorModule::StartupModule()
 {
@@ -30,15 +35,27 @@ void FInputSMEditorModule::StartupModule()
 
 	InputSMGraphPinConnectionFactory = MakeShareable(new FInputSMGraphPinConnectionFactory());
 	FEdGraphUtilities::RegisterVisualPinConnectionFactory(InputSMGraphPinConnectionFactory);
+
+	FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(PropertyEditorModuleName);
+	PropertyModule.RegisterCustomPropertyTypeLayout(FInputFrameStack::StaticStruct()->GetFName(), FOnGetPropertyTypeCustomizationInstance::CreateStatic(&FPTCustomization_IFS::MakeInstance));
 }
 
 void FInputSMEditorModule::ShutdownModule()
 {
+	if (FModuleManager::Get().IsModuleLoaded(PropertyEditorModuleName))
+	{
+		FPropertyEditorModule& PropertyModule = FModuleManager::LoadModuleChecked<FPropertyEditorModule>(PropertyEditorModuleName);
+		PropertyModule.UnregisterCustomPropertyTypeLayout(FInputFrameStack::StaticStruct()->GetFName());
+	}
+
 	FEdGraphUtilities::UnregisterVisualPinConnectionFactory(InputSMGraphPinConnectionFactory);
+	InputSMGraphPinConnectionFactory.Reset();
 
 	FEdGraphUtilities::UnregisterVisualPinFactory(InputSMGraphPinFactory);
+	InputSMGraphPinFactory.Reset();
 
 	FEdGraphUtilities::UnregisterVisualNodeFactory(InputSMGraphNodeFactory);
+	InputSMGraphNodeFactory.Reset();
 
 	if (FModuleManager::Get().IsModuleLoaded(AssetToolsModuleName))
 	{

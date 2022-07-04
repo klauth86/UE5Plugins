@@ -135,6 +135,7 @@ FLinearColor SInputSMGraphNode_Transition::StaticGetTransitionColor(UInputSMGrap
 	const FLinearColor ActiveColor(1.0f, 0.4f, 0.3f, 1.0f);
 	const FLinearColor HoverColor(0.724f, 0.256f, 0.0f, 1.0f);
 	FLinearColor BaseColor(0.9f, 0.9f, 0.9f, 1.0f);
+	
 	return bIsHovered ? HoverColor : BaseColor;
 }
 

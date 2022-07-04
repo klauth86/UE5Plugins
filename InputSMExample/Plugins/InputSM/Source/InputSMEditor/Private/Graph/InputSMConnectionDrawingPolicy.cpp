@@ -20,8 +20,6 @@ void FInputSMConnectionDrawingPolicy::DetermineWiringStyle(UEdGraphPin* OutputPi
 		if (UInputSMGraphNode_Transition* TransNode = Cast<UInputSMGraphNode_Transition>(InputPin->GetOwningNode()))
 		{
 			Params.WireColor = SInputSMGraphNode_Transition::StaticGetTransitionColor(TransNode, HoveredPins.Contains(InputPin));
-
-			Params.bUserFlag1 = TransNode->Bidirectional;
 		}
 	}
 
@@ -41,7 +39,7 @@ void FInputSMConnectionDrawingPolicy::DetermineLinkGeometry(
 	/*out*/ FArrangedWidget*& EndWidgetGeometry
 )
 {
-	if (UInputSMGraphNode_Root* EntryNode = Cast<UInputSMGraphNode_Root>(OutputPin->GetOwningNode()))
+	if (UInputSMGraphNode_Entry* EntryNode = Cast<UInputSMGraphNode_Entry>(OutputPin->GetOwningNode()))
 	{
 		StartWidgetGeometry = PinGeometries->Find(OutputPinWidget);
 
@@ -106,12 +104,6 @@ void FInputSMConnectionDrawingPolicy::DrawPreviewConnector(const FGeometry& PinG
 void FInputSMConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D& StartAnchorPoint, const FVector2D& EndAnchorPoint, const FConnectionParams& Params)
 {
 	Internal_DrawLineWithArrow(StartAnchorPoint, EndAnchorPoint, Params);
-
-	// Is the connection bidirectional?
-	if (Params.bUserFlag1)
-	{
-		Internal_DrawLineWithArrow(EndAnchorPoint, StartAnchorPoint, Params);
-	}
 }
 
 void FInputSMConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D& StartAnchorPoint, const FVector2D& EndAnchorPoint, const FConnectionParams& Params)
