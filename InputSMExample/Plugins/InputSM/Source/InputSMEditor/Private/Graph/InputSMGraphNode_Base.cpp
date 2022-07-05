@@ -3,6 +3,8 @@
 #include "Graph/InputSMGraphNode_Base.h"
 #include "Graph/InputSMGraphSchema.h"
 
+UInputSMGraphNode_Base::FTitleChanged UInputSMGraphNode_Base::OnTitleChanged;
+
 bool UInputSMGraphNode_Base::CanCreateUnderSpecifiedSchema(const UEdGraphSchema* DesiredSchema) const
 {
 	return DesiredSchema->GetClass()->IsChildOf(UInputSMGraphSchema::StaticClass());
@@ -57,13 +59,33 @@ FText UInputSMGraphNode_Entry::GetNodeTitle(ENodeTitleType::Type TitleType) cons
 
 const FName UInputSMGraphNode_Entry::EntryOutputPinName("RootOutputPin");
 
+void UInputSMGraphNode_State::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+{
+	FName PropertyName = (PropertyChangedEvent.Property != NULL) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(UInputSMGraphNode_State, StateName) ||
+		PropertyName == GET_MEMBER_NAME_CHECKED(UInputSMGraphNode_State, StateAsset))
+	{
+		OnTitleChanged.Broadcast(this);
+	}
+
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+}
+
 void UInputSMGraphNode_State::AllocateDefaultPins()
 {
     UEdGraphPin* Inputs = CreatePin(EGPD_Input, TEXT("Transition"), TEXT("In"));
     UEdGraphPin* Outputs = CreatePin(EGPD_Output, TEXT("Transition"), TEXT("Out"));
 }
 
-FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const { return FText::FromName(StateName); }
+FText UInputSMGraphNode_State::GetNodeTitle(ENodeTitleType::Type TitleType) const 
+{ 
+	FFormatNamedArguments Args;
+	Args.Add(TEXT("StateName"), FText::FromName(StateName));
+	Args.Add(TEXT("StateAsset"), FText::FromString(StateAsset ? StateAsset->GetName() : FString("NULL")));
+
+	return FText::Format(NSLOCTEXT("UInputSMGraphNode_State", "NodeTitle", "{StateName} [{StateAsset}]"), Args);
+}
 
 void UInputSMGraphNode_Transition::AllocateDefaultPins()
 {
@@ -82,7 +104,7 @@ FText UInputSMGraphNode_Transition::GetNodeTitle(ENodeTitleType::Type TitleType)
 	Args.Add(TEXT("PrevState"), FText::FromString(PrevState ? PrevState->GetName() : "???"));
 	Args.Add(TEXT("NextState"), FText::FromString(NextState ? NextState->GetName() : "???"));
 
-	return FText::Format(NSLOCTEXT("UInputSMGraphNode_Transition", "PrevStateToNewState", "{PrevState} => {NextState}"), Args);
+	return FText::Format(NSLOCTEXT("UInputSMGraphNode_Transition", "NodeTitle", "{PrevState} => {NextState}"), Args);
 }
 
 UInputSMGraphNode_State* UInputSMGraphNode_Transition::GetPreviousState() const

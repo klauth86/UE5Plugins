@@ -60,6 +60,15 @@ void SInputSMGraphNode_State::Construct(const FArguments& InArgs, UInputSMGraphN
 	SetCursor(EMouseCursor::CardinalCross);
 
 	UpdateGraphNode();
+
+	UInputSMGraphNode_Base::OnTitleChanged.AddRaw(this, &SInputSMGraphNode_State::OnTitleChanged);
+}
+
+SInputSMGraphNode_State::~SInputSMGraphNode_State()
+{
+	UInputSMGraphNode_Base::OnTitleChanged.RemoveAll(this);
+	
+	NodeTitle.Reset();
 }
 
 FSlateColor SInputSMGraphNode_State::GetBorderBackgroundColor() const
@@ -84,7 +93,7 @@ void SInputSMGraphNode_State::UpdateGraphNode()
 
 	FLinearColor TitleShadowColor(0.6f, 0.6f, 0.6f);
 	TSharedPtr<SErrorText> ErrorText;
-	TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
+	NodeTitle = SNew(SNodeTitle, GraphNode);
 
 	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
 	this->GetOrAddSlot(ENodeZone::Center)
@@ -202,4 +211,12 @@ FText SInputSMGraphNode_State::GetPreviewCornerText() const
 const FSlateBrush* SInputSMGraphNode_State::GetNameIcon() const
 {
 	return FEditorStyle::GetBrush(TEXT("Graph.StateNode.Icon"));
+}
+
+void SInputSMGraphNode_State::OnTitleChanged(UInputSMGraphNode_Base* node)
+{
+	if (node == GraphNode)
+	{
+		NodeTitle->MarkDirty();
+	}
 }

@@ -14,6 +14,8 @@ public:
 
 	void Construct(const FArguments& InArgs, UInputSMGraphNode_State* InNode);
 
+	virtual ~SInputSMGraphNode_State();
+
 	// SNodePanel::SNode interface
 	virtual void GetNodeInfoPopups(FNodeInfoContext* Context, TArray<FGraphInformationPopupInfo>& Popups) const override {}
 	// End of SNodePanel::SNode interface
@@ -29,4 +31,7 @@ protected:
 
 	virtual FText GetPreviewCornerText() const;
 	virtual const FSlateBrush* GetNameIcon() const;
+	void OnTitleChanged(UInputSMGraphNode_Base* node);
+
+	TSharedPtr<SNodeTitle> NodeTitle;
 };

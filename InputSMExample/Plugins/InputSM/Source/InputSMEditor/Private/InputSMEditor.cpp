@@ -156,9 +156,9 @@ void FInputSMEditor::CreateInternalWidgets()
 	FDetailsViewArgs DetailsViewArgs = FDetailsViewArgs();
 	DetailsViewArgs.bUpdatesFromSelection = false;
 	DetailsViewArgs.bLockable = false;
-	DetailsViewArgs.bAllowSearch = true;
-	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::ObjectsUseNameArea;
-	DetailsViewArgs.bHideSelectionTip = false;
+	DetailsViewArgs.bAllowSearch = false;
+	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+	DetailsViewArgs.bHideSelectionTip = true;
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 	DetailsView->SetObject(NULL);
 }

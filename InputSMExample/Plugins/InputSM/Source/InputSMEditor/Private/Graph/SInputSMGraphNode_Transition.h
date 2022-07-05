@@ -29,6 +29,10 @@ public:
 
 	static FLinearColor StaticGetTransitionColor(UInputSMGraphNode_Transition* TransNode, bool bIsHovered);
 
+	void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
+
+	void OnMouseLeave(const FPointerEvent& MouseEvent);
+
 private:
 
 	FSlateColor GetTransitionColor() const;

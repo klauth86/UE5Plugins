@@ -3,6 +3,7 @@
 #include "Graph/SInputSMGraphNode_Transition.h"
 #include "Graph/InputSMGraphNode_Base.h"
 #include "ConnectionDrawingPolicy.h"
+#include "SGraphPanel.h"
 
 void SInputSMGraphNode_Transition::Construct(const FArguments& InArgs, UInputSMGraphNode_Transition* InNode)
 {
@@ -147,3 +148,25 @@ FSlateColor SInputSMGraphNode_Transition::GetTransitionColor() const
 }
 
 const FSlateBrush* SInputSMGraphNode_Transition::GetTransitionIconImage() const { return FEditorStyle::GetBrush("Graph.TransitionNode.Icon"); }
+
+void SInputSMGraphNode_Transition::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
+	if (UEdGraphPin* Pin = TransNode->GetInputPin())
+	{
+		GetOwnerPanel()->AddPinToHoverSet(Pin);
+	}
+
+	SGraphNode::OnMouseEnter(MyGeometry, MouseEvent);
+}
+
+void SInputSMGraphNode_Transition::OnMouseLeave(const FPointerEvent& MouseEvent)
+{
+	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
+	if (UEdGraphPin* Pin = TransNode->GetInputPin())
+	{
+		GetOwnerPanel()->RemovePinFromHoverSet(Pin);
+	}
+
+	SGraphNode::OnMouseLeave(MouseEvent);
+}
