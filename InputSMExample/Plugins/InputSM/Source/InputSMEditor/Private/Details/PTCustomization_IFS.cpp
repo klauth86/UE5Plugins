@@ -59,175 +59,371 @@ public:
 				.FillColumn(6, 0)
 				.FillColumn(7, 1)
 				.FillColumn(8, 0)
-				+ SGridPanel::Slot(0, 0).VAlign(VAlign_Center)
+
+				+ SGridPanel::Slot(0, 0).VAlign(VAlign_Center).HAlign(HAlign_Center)
 				[
 					SNew(SGridPanel)
 
-					+ SGridPanel::Slot(0, 0)[SNew(SButton)
+					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
 					.ButtonColorAndOpacity_Lambda([this]() { return GetColorAndOpacityForTriggers(0); })
-					.Text_Lambda([this]() { return GetTextForTriggers("LB", 0); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(0); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(0); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("LB"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(0); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
 
-					+ SGridPanel::Slot(0, 1)[SNew(SButton)
+					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
 					.ButtonColorAndOpacity_Lambda([this]() { return GetColorAndOpacityForTriggers(2); })
-					.Text_Lambda([this]() { return GetTextForTriggers("LT", 2); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(2); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(2); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("LT"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(2); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
 				]
 
-				+ SGridPanel::Slot(2, 0).VAlign(VAlign_Center)
+				+ SGridPanel::Slot(2, 0).VAlign(VAlign_Center).HAlign(HAlign_Center)
 				[
 					SNew(SGridPanel)
 
-					+ SGridPanel::Slot(0, 0)[SNew(SButton)
+					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_315)
-					.Text(FText::FromString("315"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 7); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("315"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 7); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(1, 0)[SNew(SButton)
+					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_0)
-					.Text(FText::FromString("0"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 0); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("0"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 0); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 0)[SNew(SButton)
+					+ SGridPanel::Slot(2, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_45)
-					.Text(FText::FromString("45"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 1); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("45"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 1); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 
-					+ SGridPanel::Slot(0, 1)[SNew(SButton)
+					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_270)
-					.Text(FText::FromString("270"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 6); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("270"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 6); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 1)[SNew(SButton)
+					+ SGridPanel::Slot(2, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_90)
-					.Text(FText::FromString("90"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 2); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("90"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 2); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 
-					+ SGridPanel::Slot(0, 2)[SNew(SButton)
+					+ SGridPanel::Slot(0, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_225)
-					.Text(FText::FromString("225"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 5); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("225"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 5); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(1, 2)[SNew(SButton)
+					+ SGridPanel::Slot(1, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_180)
-					.Text(FText::FromString("180"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 4); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("180"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 4); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 2)[SNew(SButton)
+					+ SGridPanel::Slot(2, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_135)
-					.Text(FText::FromString("135"))
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 3); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("135"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(0, 3); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 				]
 
-				+ SGridPanel::Slot(4, 0).VAlign(VAlign_Center)
+				+ SGridPanel::Slot(4, 0).VAlign(VAlign_Center).HAlign(HAlign_Center)
 				[
 					SNew(SGridPanel)
 
-					+ SGridPanel::Slot(0, 0)[SNew(SButton)
+					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_315)
-					.Text(FText::FromString("315"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 7); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("315"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 7); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(1, 0)[SNew(SButton)
+					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_0)
-					.Text(FText::FromString("0"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 0); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("0"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 0); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 0)[SNew(SButton)
+					+ SGridPanel::Slot(2, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_45)
-					.Text(FText::FromString("45"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 1); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("45"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 1); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 
-					+ SGridPanel::Slot(0, 1)[SNew(SButton)
+					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_270)
-					.Text(FText::FromString("270"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 6); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("270"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 6); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 1)[SNew(SButton)
+					+ SGridPanel::Slot(2, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_90)
-					.Text(FText::FromString("90"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 2); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("90"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 2); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 
-					+ SGridPanel::Slot(0, 2)[SNew(SButton)
+					+ SGridPanel::Slot(0, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_225)
-					.Text(FText::FromString("225"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 5); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("225"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 5); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(1, 2)[SNew(SButton)
+					+ SGridPanel::Slot(1, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_180)
-					.Text(FText::FromString("180"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 4); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("180"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 4); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
-					+ SGridPanel::Slot(2, 2)[SNew(SButton)
+					+ SGridPanel::Slot(2, 2)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_135)
-					.Text(FText::FromString("135"))
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 3); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(STextBlock)
+							.Text(FText::FromString("135"))
+							.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForStick(1, 3); })
+							.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+						]
 					]
 				]
 
-				+ SGridPanel::Slot(6, 0).VAlign(VAlign_Center)
+				+ SGridPanel::Slot(6, 0).VAlign(VAlign_Center).HAlign(HAlign_Center)
 				[
 					SNew(SGridPanel)
 
-					+ SGridPanel::Slot(0, 0)[SNew(SButton)
+					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
 					.ButtonColorAndOpacity_Lambda([this]() { return GetColorAndOpacityForTriggers(4); })
-					.Text_Lambda([this]() { return GetTextForTriggers("RB", 4); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(4); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(4); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("RB"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(4); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
 
-					+ SGridPanel::Slot(0, 1)[SNew(SButton)
+					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
 					.ButtonColorAndOpacity_Lambda([this]() { return GetColorAndOpacityForTriggers(6); })
-					.Text_Lambda([this]() { return GetTextForTriggers("RT", 6); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(6); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(6); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("RT"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(6); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
 				]
 
-				+ SGridPanel::Slot(8, 0).VAlign(VAlign_Center)
+				+ SGridPanel::Slot(8, 0).VAlign(VAlign_Center).HAlign(HAlign_Center)
 				[
 					SNew(SGridPanel)
 
-					+ SGridPanel::Slot(0, 0)[SNew(SButton)
+					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_X)
-					.Text_Lambda([this]() { return GetTextForTriggers("X", 8); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(8); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(8); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("X"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(8); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
-					+ SGridPanel::Slot(0, 1)[SNew(SButton)
+					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_A)
-					.Text_Lambda([this]() { return GetTextForTriggers("A", 10); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(10); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(10); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("A"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(10); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
-					+ SGridPanel::Slot(1, 0)[SNew(SButton)
+					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_Y)
-					.Text_Lambda([this]() { return GetTextForTriggers("Y", 12); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(12); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(12); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("Y"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(12); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
-					+ SGridPanel::Slot(1, 1)[SNew(SButton)
+					+ SGridPanel::Slot(1, 1)[SNew(SButton).ContentPadding(0)
 					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_B)
-					.Text_Lambda([this]() { return GetTextForTriggers("B", 14); })
 					.OnClicked_Lambda([this]() { return ClickForTrigger(14); })
+					.VAlign(VAlign_Center).HAlign(HAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(1))
+							[
+								SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("ArrowDown"))).Visibility_Lambda([this]() { return GetPressedVisForPacked(14); })
+							]
+							+ SHorizontalBox::Slot().VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+							[
+								SNew(STextBlock)
+								.Text(FText::FromString("B"))
+								.ColorAndOpacity_Lambda([this]() { return GetTextColorAndOpacityForPacked(14); })
+								.Font(FEditorStyle::GetFontStyle("Persona.RetargetManager.SmallBoldFont"))
+							]
+						]
 					]
 				]
 			];
-	}
-
-	FText GetTextForTriggers(FString base, uint16 bitOffset) const
-	{
-		if (FInputFrame* inputFrame = GetInputFrame())
-		{
-			uint16 offsettedHoldMask = FInputFrame::HOLD_MASK << bitOffset;
-			bool isHold = offsettedHoldMask & inputFrame->PackedBits;
-
-			return FText::FromString(isHold ? "Holded " + base : base);
-		}
-
-		return FText::GetEmpty();
 	}
 
 	FReply ClickForTrigger(uint16 bitOffset) const
@@ -270,11 +466,43 @@ public:
 		return BaseColor;
 	}
 
+	EVisibility GetPressedVisForPacked(uint16 bitOffset) const
+	{
+		if (FInputFrame* inputFrame = GetInputFrame())
+		{
+			uint16 offsettedHoldMask = FInputFrame::HOLD_MASK << bitOffset;
+			bool isHold = offsettedHoldMask & inputFrame->PackedBits;
+
+			if (isHold) return EVisibility::Visible;
+		}
+
+		return EVisibility::Hidden;
+	}
+
+	FSlateColor GetTextColorAndOpacityForPacked(uint16 bitOffset) const
+	{
+		const FLinearColor HoverColor(1, 1, 1, 1);
+		const FLinearColor BaseColor(1, 1, 1, 0.2);
+
+		if (FInputFrame* inputFrame = GetInputFrame())
+		{
+			uint16 offsettedHoldMask = FInputFrame::HOLD_MASK << bitOffset;
+			bool isHold = offsettedHoldMask & inputFrame->PackedBits;
+
+			uint16 offsettedPressMask = FInputFrame::PRESS_MASK << bitOffset;
+			bool isPressed = offsettedPressMask & inputFrame->PackedBits;
+
+			if (isHold || isPressed) return HoverColor;
+		}
+
+		return BaseColor;
+	}
+
 	FReply ClickForStick(int32 stickIndex, int32 valueIndex)
 	{
 		if (FInputFrame* inputFrame = GetInputFrame())
 		{
-			if (stickIndex)
+			if (stickIndex == 0)
 			{
 				switch (valueIndex)
 				{
@@ -482,6 +710,46 @@ public:
 
 		return FReply::Handled();
 	}
+
+	FSlateColor GetTextColorAndOpacityForStick(int32 stickIndex, int32 valueIndex) const
+	{
+		const FLinearColor HoverColor(1, 1, 1, 1);
+		const FLinearColor BaseColor(1, 1, 1, 0.2);
+
+		if (FInputFrame* inputFrame = GetInputFrame())
+		{
+			if (stickIndex == 0)
+			{
+				switch (valueIndex)
+				{
+				case 0:	return (inputFrame->LeftStickVer > 0 && inputFrame->LeftStickHor == 0) ? HoverColor : BaseColor;
+				case 1:	return (inputFrame->LeftStickVer > 0 && inputFrame->LeftStickHor > 0) ? HoverColor : BaseColor;
+				case 2:	return (inputFrame->LeftStickVer == 0 && inputFrame->LeftStickHor > 0) ? HoverColor : BaseColor;
+				case 3:	return (inputFrame->LeftStickVer < 0 && inputFrame->LeftStickHor > 0) ? HoverColor : BaseColor;
+				case 4:	return (inputFrame->LeftStickVer < 0 && inputFrame->LeftStickHor == 0) ? HoverColor : BaseColor;
+				case 5:	return (inputFrame->LeftStickVer < 0 && inputFrame->LeftStickHor < 0) ? HoverColor : BaseColor;
+				case 6:	return (inputFrame->LeftStickVer == 0 && inputFrame->LeftStickHor < 0) ? HoverColor : BaseColor;
+				case 7:	return (inputFrame->LeftStickVer > 0 && inputFrame->LeftStickHor < 0) ? HoverColor : BaseColor;
+				}
+			}
+			else
+			{
+				switch (valueIndex)
+				{
+				case 0:	return (inputFrame->RightStickVer > 0 && inputFrame->RightStickHor == 0) ? HoverColor : BaseColor;
+				case 1:	return (inputFrame->RightStickVer > 0 && inputFrame->RightStickHor > 0) ? HoverColor : BaseColor;
+				case 2:	return (inputFrame->RightStickVer == 0 && inputFrame->RightStickHor > 0) ? HoverColor : BaseColor;
+				case 3:	return (inputFrame->RightStickVer < 0 && inputFrame->RightStickHor > 0) ? HoverColor : BaseColor;
+				case 4:	return (inputFrame->RightStickVer < 0 && inputFrame->RightStickHor == 0) ? HoverColor : BaseColor;
+				case 5:	return (inputFrame->RightStickVer < 0 && inputFrame->RightStickHor < 0) ? HoverColor : BaseColor;
+				case 6:	return (inputFrame->RightStickVer == 0 && inputFrame->RightStickHor < 0) ? HoverColor : BaseColor;
+				case 7:	return (inputFrame->RightStickVer > 0 && inputFrame->RightStickHor < 0) ? HoverColor : BaseColor;
+				}
+			}
+		}
+
+		return BaseColor;
+	}
 };
 
 TSharedRef<IPropertyTypeCustomization> FPTCustomization_IFS::MakeInstance()
@@ -500,9 +768,23 @@ void FPTCustomization_IFS::CustomizeChildren(TSharedRef<IPropertyHandle> Propert
 	ChildBuilder.AddCustomRow(LOCTEXT("SearchString", "Joystick Input"))[
 		SNew(SVerticalBox)
 			+ SVerticalBox::Slot().FillHeight(1)[SAssignNew(grid, SGridPanel).FillColumn(0, 1).FillColumn(1, 0)]
-			+ SVerticalBox::Slot().AutoHeight().Padding(8)[SNew(SButton).OnClicked(this, &FPTCustomization_IFS::Add).HAlign(HAlign_Center)[
-				SNew(STextBlock).Text(LOCTEXT("Add", "ADD"))
-			]]
+			+ SVerticalBox::Slot().AutoHeight().Padding(8)
+			[
+				SNew(SButton).OnClicked(this, &FPTCustomization_IFS::Add).HAlign(HAlign_Center)
+				.ToolTipText(LOCTEXT("AddButtonToolTip", "Add"))
+				[
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().AutoWidth().Padding(FMargin(2))
+					[
+						SNew(SImage).Image(FEditorStyle::GetBrush("Plus"))
+					]
+					+ SHorizontalBox::Slot()
+					.VAlign(VAlign_Center).AutoWidth().Padding(FMargin(2))
+					[
+						SNew(STextBlock).Text(LOCTEXT("AddButtonText", "Add"))
+					]
+				]
+			]
 	];
 
 	if (FInputFrameStack* InputFrameStack = GetPropertyAs<FInputFrameStack>())
@@ -561,7 +843,13 @@ void FPTCustomization_IFS::AddWidget(FInputFrameStack* inputFrameStack, int32 fr
 	TSharedPtr<SButton> button;
 
 	grid->AddSlot(0, frameIndex).Padding(0, 8)[element.ToSharedRef()];
-	grid->AddSlot(1, frameIndex).Padding(8, 8).VAlign(VAlign_Center)[SAssignNew(button, SButton).VAlign(VAlign_Center)[SNew(STextBlock).Text(LOCTEXT("Remove", "REMOVE"))]];
+	grid->AddSlot(1, frameIndex).Padding(8, 8).VAlign(VAlign_Center).HAlign(HAlign_Center)
+		[
+			SAssignNew(button, SButton).ButtonStyle(FEditorStyle::Get(), "HoverHintOnly").ToolTipText(LOCTEXT("RemoveButtonTooltip", "Remove"))
+				[
+					SNew(SImage).Image(FEditorStyle::GetBrush("Cross"))
+				]
+		];
 
 	button->SetOnClicked(FOnClicked::CreateRaw(this, &FPTCustomization_IFS::Remove, element, button));
 }
