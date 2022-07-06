@@ -24,7 +24,10 @@ public:
 		/*out*/ FArrangedWidget*& EndWidgetGeometry
 	) override;
 	virtual void DrawSplineWithArrow(const FGeometry& StartGeom, const FGeometry& EndGeom, const FConnectionParams& Params) override;
-	virtual void DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint, const FConnectionParams& Params) override;
+	virtual void DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint, const FConnectionParams& Params) override
+	{
+		Internal_DrawLineWithArrow(StartPoint, EndPoint, Params);
+	}
 	virtual void DrawPreviewConnector(const FGeometry& PinGeometry, const FVector2D& StartPoint, const FVector2D& EndPoint, UEdGraphPin* Pin) override;
 	virtual FVector2D ComputeSplineTangent(const FVector2D& Start, const FVector2D& End) const override;
 	// End of FConnectionDrawingPolicy interface

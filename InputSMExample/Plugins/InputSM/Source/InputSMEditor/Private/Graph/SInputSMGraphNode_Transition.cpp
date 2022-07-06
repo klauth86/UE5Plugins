@@ -140,15 +140,6 @@ FLinearColor SInputSMGraphNode_Transition::StaticGetTransitionColor(UInputSMGrap
 	return bIsHovered ? HoverColor : BaseColor;
 }
 
-FSlateColor SInputSMGraphNode_Transition::GetTransitionColor() const
-{
-	// Highlight the transition node when the node is hovered or when the previous state is hovered
-	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
-	return StaticGetTransitionColor(TransNode, (IsHovered() || (PrevStateNodeWidgetPtr.IsValid() && PrevStateNodeWidgetPtr.Pin()->IsHovered())));
-}
-
-const FSlateBrush* SInputSMGraphNode_Transition::GetTransitionIconImage() const { return FEditorStyle::GetBrush("Graph.TransitionNode.Icon"); }
-
 void SInputSMGraphNode_Transition::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
 {
 	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
@@ -170,3 +161,12 @@ void SInputSMGraphNode_Transition::OnMouseLeave(const FPointerEvent& MouseEvent)
 
 	SGraphNode::OnMouseLeave(MouseEvent);
 }
+
+FSlateColor SInputSMGraphNode_Transition::GetTransitionColor() const
+{
+	// Highlight the transition node when the node is hovered or when the previous state is hovered
+	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
+	return StaticGetTransitionColor(TransNode, (IsHovered() || (PrevStateNodeWidgetPtr.IsValid() && PrevStateNodeWidgetPtr.Pin()->IsHovered())));
+}
+
+const FSlateBrush* SInputSMGraphNode_Transition::GetTransitionIconImage() const { return FEditorStyle::GetBrush("Graph.TransitionNode.Icon"); }

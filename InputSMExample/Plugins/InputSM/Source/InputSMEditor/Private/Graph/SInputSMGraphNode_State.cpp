@@ -3,6 +3,7 @@
 #include "Graph/SInputSMGraphNode_State.h"
 #include "Graph/InputSMGraphNode_Base.h"
 #include "Widgets/Text/SInlineEditableTextBlock.h"
+#include "SGraphPanel.h"
 #include "SgraphPin.h"
 
 class SInputSMOutputPin : public SGraphPin
@@ -69,15 +70,6 @@ SInputSMGraphNode_State::~SInputSMGraphNode_State()
 	UInputSMGraphNode_Base::OnTitleChanged.RemoveAll(this);
 	
 	NodeTitle.Reset();
-}
-
-FSlateColor SInputSMGraphNode_State::GetBorderBackgroundColor() const
-{
-	FLinearColor InactiveStateColor(0.08f, 0.08f, 0.08f);
-	FLinearColor ActiveStateColorDim(0.4f, 0.3f, 0.15f);
-	FLinearColor ActiveStateColorBright(1.f, 0.6f, 0.35f);
-
-	return InactiveStateColor;
 }
 
 void SInputSMGraphNode_State::UpdateGraphNode()
@@ -199,6 +191,55 @@ void SInputSMGraphNode_State::AddPin(const TSharedRef<SGraphPin>& PinToAdd)
 			PinToAdd
 		];
 	OutputPins.Add(PinToAdd);
+}
+
+void SInputSMGraphNode_State::OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	// Add pins to the hover set so outgoing transitions arrows remains highlighted while the mouse is over the state node
+	if (const UInputSMGraphNode_State* StateNode = Cast<UInputSMGraphNode_State>(GraphNode))
+	{
+		if (const UEdGraphPin* OutputPin = StateNode->GetOutputPin())
+		{
+			TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
+			check(OwnerPanel.IsValid());
+
+			for (int32 LinkIndex = 0; LinkIndex < OutputPin->LinkedTo.Num(); ++LinkIndex)
+			{
+				OwnerPanel->AddPinToHoverSet(OutputPin->LinkedTo[LinkIndex]);
+			}
+		}
+	}
+
+	SGraphNode::OnMouseEnter(MyGeometry, MouseEvent);
+}
+
+void SInputSMGraphNode_State::OnMouseLeave(const FPointerEvent& MouseEvent)
+{
+	// Remove manually added pins from the hover set
+	if (const UInputSMGraphNode_State* StateNode = Cast<UInputSMGraphNode_State>(GraphNode))
+	{
+		if (const UEdGraphPin* OutputPin = StateNode->GetOutputPin())
+		{
+			TSharedPtr<SGraphPanel> OwnerPanel = GetOwnerPanel();
+			check(OwnerPanel.IsValid());
+
+			for (int32 LinkIndex = 0; LinkIndex < OutputPin->LinkedTo.Num(); ++LinkIndex)
+			{
+				OwnerPanel->RemovePinFromHoverSet(OutputPin->LinkedTo[LinkIndex]);
+			}
+		}
+	}
+
+	SGraphNode::OnMouseLeave(MouseEvent);
+}
+
+FSlateColor SInputSMGraphNode_State::GetBorderBackgroundColor() const
+{
+	FLinearColor InactiveStateColor(0.08f, 0.08f, 0.08f);
+	FLinearColor ActiveStateColorDim(0.4f, 0.3f, 0.15f);
+	FLinearColor ActiveStateColorBright(1.f, 0.6f, 0.35f);
+
+	return InactiveStateColor;
 }
 
 FText SInputSMGraphNode_State::GetPreviewCornerText() const

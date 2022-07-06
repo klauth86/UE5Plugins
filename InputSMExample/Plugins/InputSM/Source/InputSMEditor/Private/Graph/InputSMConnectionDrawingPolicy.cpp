@@ -100,12 +100,6 @@ void FInputSMConnectionDrawingPolicy::DrawPreviewConnector(const FGeometry& PinG
 	DrawSplineWithArrow(AdjustedStartPoint, EndPoint, Params);
 }
 
-
-void FInputSMConnectionDrawingPolicy::DrawSplineWithArrow(const FVector2D& StartAnchorPoint, const FVector2D& EndAnchorPoint, const FConnectionParams& Params)
-{
-	Internal_DrawLineWithArrow(StartAnchorPoint, EndAnchorPoint, Params);
-}
-
 void FInputSMConnectionDrawingPolicy::Internal_DrawLineWithArrow(const FVector2D& StartAnchorPoint, const FVector2D& EndAnchorPoint, const FConnectionParams& Params)
 {
 	//@TODO: Should this be scaled by zoom factor?

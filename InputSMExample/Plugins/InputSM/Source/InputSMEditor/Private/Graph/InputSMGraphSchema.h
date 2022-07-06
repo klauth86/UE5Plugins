@@ -10,6 +10,8 @@ class UInputSMGraphSchema : public UEdGraphSchema
 {
 	GENERATED_BODY()
 
+	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override;
+
 	virtual void CreateDefaultNodesForGraph(UEdGraph& Graph) const override;
 
 	virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const;

@@ -60,6 +60,11 @@ void FInputSMGraphSchemaAction_NewStateNode::AddReferencedObjects(FReferenceColl
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
+FLinearColor UInputSMGraphSchema::GetPinTypeColor(const FEdGraphPinType& PinType) const
+{
+	return FLinearColor::White;
+}
+
 void UInputSMGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	FGraphNodeCreator<UInputSMGraphNode_Entry> NodeCreator(Graph);

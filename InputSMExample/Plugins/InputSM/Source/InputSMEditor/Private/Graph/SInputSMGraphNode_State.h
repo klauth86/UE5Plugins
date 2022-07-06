@@ -26,6 +26,10 @@ public:
 	virtual void AddPin(const TSharedRef<SGraphPin>& PinToAdd) override;
 	// End of SGraphNode interface
 
+	void OnMouseEnter(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
+
+	void OnMouseLeave(const FPointerEvent& MouseEvent);
+
 protected:
 	FSlateColor GetBorderBackgroundColor() const;
 
