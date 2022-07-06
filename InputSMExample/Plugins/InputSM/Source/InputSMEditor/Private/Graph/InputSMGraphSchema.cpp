@@ -109,66 +109,55 @@ const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdG
 		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Entry must connect to a state node"));
 	}
 
-
 	const bool bPinAIsTransition = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Transition::StaticClass());
 	const bool bPinBIsTransition = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Transition::StaticClass());
 
-	if (bPinAIsTransition && bPinBIsTransition)
+	if (bPinAIsTransition || bPinBIsTransition)
 	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Cannot wire a transition to a transition"));
+		if (bPinAIsTransition && bPinBIsStateNode)
+		{
+			return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, TEXT(""));
+		}
+
+		if (bPinBIsTransition && bPinAIsStateNode)
+		{
+			return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_B, TEXT(""));
+		}
+
+		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Transition must connect to a state node"));
 	}
 
-	// Compare the directions
-	bool bDirectionsOK = false;
-
-	if ((PinA->Direction == EGPD_Input) && (PinB->Direction == EGPD_Output))
-	{
-		bDirectionsOK = true;
-	}
-	else if ((PinB->Direction == EGPD_Input) && (PinA->Direction == EGPD_Output))
-	{
-		bDirectionsOK = true;
-	}
-
-	/*
-	if (!bDirectionsOK)
-	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, TEXT("Directions are not compatible"));
-	}
-	*/
-
-	// Transitions are exclusive (both input and output), but states are not
-	if (bPinAIsTransition)
-	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_A, TEXT(""));
-	}
-	else if (bPinBIsTransition)
-	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_B, TEXT(""));
-	}
-	else if (!bPinAIsTransition && !bPinBIsTransition)
-	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE, TEXT("Create a transition"));
-	}
-	else
-	{
-		return FPinConnectionResponse(CONNECT_RESPONSE_MAKE, TEXT(""));
-	}
+	return FPinConnectionResponse(CONNECT_RESPONSE_MAKE_WITH_CONVERSION_NODE, TEXT("Create a transition"));
 }
 
 bool UInputSMGraphSchema::TryCreateConnection(UEdGraphPin* PinA, UEdGraphPin* PinB) const
 {
-	if (PinB->Direction == PinA->Direction)
+	const bool bPinAIsEntry = PinA->GetOwningNode()->IsA(UInputSMGraphNode_Entry::StaticClass());
+	const bool bPinBIsEntry = PinB->GetOwningNode()->IsA(UInputSMGraphNode_Entry::StaticClass());
+
+	if (bPinAIsEntry)
 	{
-		if (UInputSMGraphNode_State* Node = Cast<UInputSMGraphNode_State>(PinB->GetOwningNode()))
+		UInputSMGraphNode_State* NodeB = Cast<UInputSMGraphNode_State>(PinB->GetOwningNode());
+		if (NodeB) PinB = NodeB->GetInputPin();
+	}
+	else if (bPinBIsEntry)
+	{
+		UInputSMGraphNode_State* NodeA = Cast<UInputSMGraphNode_State>(PinA->GetOwningNode());
+		if (NodeA) PinA = NodeA->GetInputPin();
+	}
+	else
+	{
+		UInputSMGraphNode_State* NodeA = Cast<UInputSMGraphNode_State>(PinA->GetOwningNode());
+		if (NodeA) PinA = NodeA->GetOutputPin();
+
+		UInputSMGraphNode_State* NodeB = Cast<UInputSMGraphNode_State>(PinB->GetOwningNode());
+		if (NodeB) PinB = NodeB->GetInputPin();
+
+		for (UEdGraphPin* inputPin : PinA->LinkedTo)
 		{
-			if (PinA->Direction == EGPD_Input)
+			for (UEdGraphPin* outputPin : PinB->LinkedTo)
 			{
-				PinB = Node->GetOutputPin();
-			}
-			else
-			{
-				PinB = Node->GetInputPin();
+				if (inputPin->GetOwningNode() == outputPin->GetOwningNode()) return false;
 			}
 		}
 	}

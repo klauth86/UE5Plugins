@@ -70,18 +70,22 @@ void SInputSMGraphNode_Transition::UpdateGraphNode()
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
-		[
-			SNew(SImage)
-			.Image(FEditorStyle::GetBrush("Graph.TransitionNode.ColorSpill"))
-		.ColorAndOpacity(this, &SInputSMGraphNode_Transition::GetTransitionColor)
-		]
-	+ SOverlay::Slot()
-		[
-			SNew(SImage)
-			.Image(this, &SInputSMGraphNode_Transition::GetTransitionIconImage)
-		]
+			SNew(SBox).WidthOverride(25).HeightOverride(25)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot().HAlign(HAlign_Fill).VAlign(VAlign_Fill)
+				[
+					SNew(SImage)
+					.Image(FEditorStyle::GetBrush("Graph.TransitionNode.ColorSpill"))
+					.ColorAndOpacity(this, &SInputSMGraphNode_Transition::GetTransitionColor)
+				]
+				+ SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
+				[
+					SNew(STextBlock).ColorAndOpacity(FColor::Black)
+					.Font(FEditorStyle::GetFontStyle("StandardDialog.SmallFont"))
+					.Text(this, &SInputSMGraphNode_Transition::GetTransitionPriority)
+				]
+			]
 		];
 }
 
@@ -170,3 +174,16 @@ FSlateColor SInputSMGraphNode_Transition::GetTransitionColor() const
 }
 
 const FSlateBrush* SInputSMGraphNode_Transition::GetTransitionIconImage() const { return FEditorStyle::GetBrush("Graph.TransitionNode.Icon"); }
+
+FText SInputSMGraphNode_Transition::GetTransitionPriority() const
+{
+	FNumberFormattingOptions NoCommas;
+	NoCommas.UseGrouping = false;
+
+	UInputSMGraphNode_Transition* TransNode = CastChecked<UInputSMGraphNode_Transition>(GraphNode);
+
+	FFormatNamedArguments Args;
+	Args.Add(TEXT("Priority"), FText::AsNumber(TransNode->Priority, &NoCommas));
+
+	return FText::Format(NSLOCTEXT("SInputSMGraphNode_Transition", "Priority", "{Priority}"), Args);
+}

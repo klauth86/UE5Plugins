@@ -94,7 +94,7 @@ public:
 public:
 
 	UPROPERTY(EditAnywhere, Category = Transition)
-		int32 PriorityOrder;
+		int32 Priority;
 
 	UPROPERTY(EditAnywhere, Category = Transition)
 		FInputFrameStack ActivationStack;

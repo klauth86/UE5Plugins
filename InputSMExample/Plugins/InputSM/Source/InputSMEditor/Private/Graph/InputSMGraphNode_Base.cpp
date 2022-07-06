@@ -29,7 +29,7 @@ void UInputSMGraphNode_Base::GetTransitionList(TArray<UInputSMGraphNode_Transiti
         {
             FORCEINLINE bool operator()(const UInputSMGraphNode_Transition& A, const UInputSMGraphNode_Transition& B) const
             {
-                return A.PriorityOrder < B.PriorityOrder;
+                return A.Priority < B.Priority;
             }
         };
 

@@ -39,5 +39,7 @@ private:
 
 	const FSlateBrush* GetTransitionIconImage() const;
 
+	FText GetTransitionPriority() const;
+
 	mutable TWeakPtr<SNode> PrevStateNodeWidgetPtr;
 };
