@@ -9,6 +9,11 @@
 
 #define LOCTEXT_NAMESPACE "UInputSMGraphSchema"
 
+UInputSMGraph::UInputSMGraph(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
+{
+	Schema = UInputSMGraphSchema::StaticClass();
+}
+
 template<class T>
 TSharedPtr<T> AddNewActionAs(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
 {
@@ -72,12 +77,6 @@ void UInputSMGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 	NodeCreator.Finalize();
 	
 	SetNodeMetaData(MyNode, FNodeMetadata::DefaultGraphNode);
-
-	////// TODO
-	//////if (UInputSM* inputSM = Graph.GetTypedOuter<UInputSM>())
-	//////{
-	//////	inputSM->GetNodes().Emplace();
-	//////}
 }
 
 const FPinConnectionResponse UInputSMGraphSchema::CanCreateConnection(const UEdGraphPin* PinA, const UEdGraphPin* PinB) const
@@ -240,12 +239,6 @@ void UInputSMGraphSchema::DroppedAssetsOnGraph(const TArray<struct FAssetData>& 
 			MyNode->NodePosX = NodePosX;
 			MyNode->NodePosY = NodePosY;
 			NodeCreator.Finalize();
-
-			////// TODO
-			//////if (UInputSM* inputSM = Graph->GetTypedOuter<UInputSM>())
-			//////{
-			//////	inputSM->GetNodes().Emplace();
-			//////}
 
 			MyNode->SetStateAsset(asset);
 

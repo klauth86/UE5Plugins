@@ -48,6 +48,7 @@ void FInputSMEditor::UnregisterTabSpawners(const TSharedRef<class FTabManager>& 
 void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSM* inputSM)
 {
 	InputSM = inputSM;
+	
 	check(InputSM != NULL);
 
 	TSharedRef<FTabManager::FLayout> StandaloneDefaultLayout = FTabManager::NewLayout("Standalone_InputSM_Layout")
@@ -79,14 +80,6 @@ void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr<
 		);
 
 	FAssetEditorToolkit::InitAssetEditor(Mode, InitToolkitHost, InputSMAppIdentifier, StandaloneDefaultLayout, true, true, InputSM);
-
-	TSharedPtr<SGraphEditor> UpdateGraphEditor = UpdateGraphEdPtr.Pin();
-	if (UpdateGraphEditor.IsValid() && UpdateGraphEditor->GetCurrentGraph() != NULL)
-	{
-		// let's find Entry node
-		UInputSMGraph* graph = Cast<UInputSMGraph>(UpdateGraphEditor->GetCurrentGraph());
-		graph->UpdateAsset();
-	}
 }
 
 FName FInputSMEditor::GetToolkitFName() const { return FName("InputSMEditor"); }
@@ -99,55 +92,13 @@ FLinearColor FInputSMEditor::GetWorldCentricTabColorScale() const { return FLine
 
 void FInputSMEditor::SaveAsset_Execute()
 {
-	TSharedPtr<SGraphEditor> UpdateGraphEditor = UpdateGraphEdPtr.Pin();
-	if (UpdateGraphEditor.IsValid() && UpdateGraphEditor->GetCurrentGraph() != NULL)
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	if (graphEditor.IsValid())
 	{
-		// let's find Entry node
-		UInputSMGraph* graph = Cast<UInputSMGraph>(UpdateGraphEditor->GetCurrentGraph());
-		graph->UpdateAsset();
+
 	}
 
-	// save it
 	FAssetEditorToolkit::SaveAsset_Execute();
-}
-
-TSharedRef<SGraphEditor> FInputSMEditor::CreateGraphEditorWidget(UEdGraph* InGraph)
-{
-	check(InGraph != NULL);
-
-	// Create the appearance info
-	FGraphAppearanceInfo AppearanceInfo;
-	AppearanceInfo.CornerText = LOCTEXT("AppearanceCornerText", "Input State Machine");
-
-	SGraphEditor::FGraphEditorEvents InEvents;
-	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSMEditor::OnSelectedNodesChanged);
-
-	CreateCommandList();
-
-	// Make title bar
-	TSharedRef<SWidget> TitleBarWidget =
-		SNew(SBorder)
-		.BorderImage(FEditorStyle::GetBrush(TEXT("Graph.TitleBackground")))
-		.HAlign(HAlign_Fill)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1.f)
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("TheQueryGraphLabel", "Input State Machine Graph"))
-		.TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText"))
-		]
-		];
-
-	// Make full graph editor
-	return SNew(SGraphEditor)
-		.AdditionalCommands(GraphEditorCommands)
-		.Appearance(AppearanceInfo)
-		.TitleBar(TitleBarWidget)
-		.GraphToEdit(InGraph)
-		.GraphEvents(InEvents);
 }
 
 void FInputSMEditor::CreateInternalWidgets()
@@ -180,34 +131,64 @@ TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Properties(const FSpawnTabArgs& Ar
 
 TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Graph(const FSpawnTabArgs& Args)
 {
+	check(InputSM != NULL);
+
 	check(Args.GetTabId().TabType == InputSMGraphTabId);
 
-	UInputSMGraph* MyGraph = Cast<UInputSMGraph>(InputSM->EdGraph);
 	if (InputSM->EdGraph == NULL)
 	{
-		MyGraph = NewObject<UInputSMGraph>(InputSM, NAME_None, RF_Transactional);
-		InputSM->EdGraph = MyGraph;
+		InputSM->EdGraph = NewObject<UInputSMGraph>(InputSM, NAME_None, RF_Transactional);
 
-		// let's read data from BT script and generate nodes
 		const UEdGraphSchema* Schema = InputSM->EdGraph->GetSchema();
 		Schema->CreateDefaultNodesForGraph(*InputSM->EdGraph);
+
+		SaveAsset_Execute();
 	}
 
-	MyGraph->Initialize();
+	check(InputSM->EdGraph != NULL);
 
-	TSharedRef<SGraphEditor> UpdateGraphEditor = CreateGraphEditorWidget(InputSM->EdGraph);
-	UpdateGraphEdPtr = UpdateGraphEditor; // Keep pointer to editor
+	// Create the appearance info
+	FGraphAppearanceInfo AppearanceInfo;
+	AppearanceInfo.CornerText = LOCTEXT("AppearanceCornerText", "Input State Machine");
+
+	SGraphEditor::FGraphEditorEvents InEvents;
+	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSMEditor::OnSelectedNodesChanged);
+
+	CreateCommandList();
+
+	// Make title bar
+	TSharedRef<SWidget> TitleBarWidget =
+		SNew(SBorder)
+		.BorderImage(FEditorStyle::GetBrush(TEXT("Graph.TitleBackground")))
+		.HAlign(HAlign_Fill)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1.f)
+		[
+			SNew(STextBlock)
+			.Text(LOCTEXT("TheQueryGraphLabel", "Input State Machine Graph"))
+		.TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText"))
+		]
+		];
 
 	return SNew(SDockTab)
 		.Label(LOCTEXT("UpdateGraph", "Update Graph"))
 		.TabColorScale(GetTabColorScale())
-		[UpdateGraphEditor];
+		[
+			SAssignNew(GraphEditorPtr, SGraphEditor)
+			.AdditionalCommands(GraphEditorCommands)
+			.Appearance(AppearanceInfo)
+			.TitleBar(TitleBarWidget)
+			.GraphToEdit(InputSM->EdGraph)
+			.GraphEvents(InEvents)
+		];
 }
 
 FInputSMEditor::FInputSMEditor()
 {
-	UEditorEngine* Editor = (UEditorEngine*)GEngine;
-	if (Editor != NULL)
+	if (UEditorEngine* Editor = (UEditorEngine*)GEngine)
 	{
 		Editor->RegisterForUndo(this);
 	}
@@ -215,8 +196,7 @@ FInputSMEditor::FInputSMEditor()
 
 FInputSMEditor::~FInputSMEditor()
 {
-	UEditorEngine* Editor = (UEditorEngine*)GEngine;
-	if (Editor)
+	if (UEditorEngine* Editor = (UEditorEngine*)GEngine)
 	{
 		Editor->UnregisterForUndo(this);
 	}
@@ -246,7 +226,7 @@ void FInputSMEditor::CreateCommandList()
 	);
 
 	GraphEditorCommands->MapAction(FGenericCommands::Get().Copy,
-		FExecuteAction::CreateRaw(this, &FInputSMEditor::CopySelectedNodes),
+		FExecuteAction::CreateRaw(this, &FInputSMEditor::CopySelectedNodesToClipboard),
 		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanCopyNodes)
 	);
 
@@ -274,9 +254,10 @@ void FInputSMEditor::CreateCommandList()
 FGraphPanelSelectionSet FInputSMEditor::GetSelectedNodes() const
 {
 	FGraphPanelSelectionSet CurrentSelection;
-	if (TSharedPtr<SGraphEditor> FocusedGraphEd = UpdateGraphEdPtr.Pin())
+	
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 	{
-		CurrentSelection = FocusedGraphEd->GetSelectedNodes();
+		if (graphEditor.IsValid()) CurrentSelection = graphEditor->GetSelectedNodes();
 	}
 
 	return CurrentSelection;
@@ -290,8 +271,7 @@ void FInputSMEditor::OnSelectedNodesChanged(const TSet<class UObject*>& NewSelec
 	{
 		for (TSet<class UObject*>::TConstIterator SetIt(NewSelection); SetIt; ++SetIt)
 		{
-			UInputSMGraphNode_Base* GraphNode = Cast<UInputSMGraphNode_Base>(*SetIt);
-			if (GraphNode)
+			if (UInputSMGraphNode_Base* GraphNode = Cast<UInputSMGraphNode_Base>(*SetIt))
 			{
 				Selection.Add(GraphNode);
 			}
@@ -306,11 +286,15 @@ void FInputSMEditor::PostUndo(bool bSuccess)
 	if (bSuccess)
 	{
 		// Clear selection, to avoid holding refs to nodes that go away
-		if (TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin())
+		if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 		{
-			CurrentGraphEditor->ClearSelectionSet();
-			CurrentGraphEditor->NotifyGraphChanged();
+			if (graphEditor.IsValid())
+			{
+				graphEditor->ClearSelectionSet();
+				graphEditor->NotifyGraphChanged();
+			}
 		}
+
 		FSlateApplication::Get().DismissAllMenus();
 	}
 }
@@ -320,159 +304,133 @@ void FInputSMEditor::PostRedo(bool bSuccess)
 	if (bSuccess)
 	{
 		// Clear selection, to avoid holding refs to nodes that go away
-		if (TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin())
+		if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 		{
-			CurrentGraphEditor->ClearSelectionSet();
-			CurrentGraphEditor->NotifyGraphChanged();
+			if (graphEditor.IsValid())
+			{
+				graphEditor->ClearSelectionSet();
+				graphEditor->NotifyGraphChanged();
+			}
 		}
+
 		FSlateApplication::Get().DismissAllMenus();
 	}
 }
 
 void FInputSMEditor::SelectAllNodes()
 {
-	if (TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin())
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 	{
-		CurrentGraphEditor->SelectAllNodes();
+		if (graphEditor.IsValid()) graphEditor->SelectAllNodes();
 	}
-}
-
-bool FInputSMEditor::CanSelectAllNodes() const
-{
-	return true;
 }
 
 void FInputSMEditor::DeleteSelectedNodes()
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	if (!CurrentGraphEditor.IsValid())
-	{
-		return;
-	}
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	
+	if (!graphEditor.IsValid()) return;
 
 	const FScopedTransaction Transaction(FGenericCommands::Get().Delete->GetDescription());
-	CurrentGraphEditor->GetCurrentGraph()->Modify();
 
-	const FGraphPanelSelectionSet SelectedNodes = CurrentGraphEditor->GetSelectedNodes();
-	CurrentGraphEditor->ClearSelectionSet();
+	UEdGraph* currentGraph = graphEditor->GetCurrentGraph();
+
+	currentGraph->Modify();
+
+	const FGraphPanelSelectionSet SelectedNodes = graphEditor->GetSelectedNodes();
+
+	graphEditor->ClearSelectionSet();
+
+	const UEdGraphSchema* currentSchema = currentGraph->GetSchema();
 
 	for (FGraphPanelSelectionSet::TConstIterator NodeIt(SelectedNodes); NodeIt; ++NodeIt)
 	{
-		if (UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt))
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt);
+
+		if (Node && Node->CanUserDeleteNode())
 		{
-			if (Node->CanUserDeleteNode())
-			{
-				Node->Modify();
-				Node->DestroyNode();
-			}
+			Node->Modify();
+			currentSchema->BreakNodeLinks(*Node);
+			Node->DestroyNode();
 		}
 	}
 }
 
 bool FInputSMEditor::CanDeleteNodes() const
 {
-	// If any of the nodes can be deleted then we should allow deleting
 	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+	
 	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
 	{
 		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
-		if (Node && Node->CanUserDeleteNode())
-		{
-			return true;
-		}
+		
+		if (Node && Node->CanUserDeleteNode()) return true;
 	}
 
 	return false;
 }
 
-void FInputSMEditor::DeleteSelectedDuplicatableNodes()
+void FInputSMEditor::CutSelectedNodes()
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	if (!CurrentGraphEditor.IsValid())
-	{
-		return;
-	}
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	if (!graphEditor.IsValid()) return;
 
-	const FGraphPanelSelectionSet OldSelectedNodes = CurrentGraphEditor->GetSelectedNodes();
-	CurrentGraphEditor->ClearSelectionSet();
+	CopySelectedNodesToClipboard();
+
+	const FGraphPanelSelectionSet OldSelectedNodes = graphEditor->GetSelectedNodes();
+
+	graphEditor->ClearSelectionSet();
 
 	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(OldSelectedNodes); SelectedIter; ++SelectedIter)
 	{
 		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
 		if (Node && Node->CanDuplicateNode())
 		{
-			CurrentGraphEditor->SetNodeSelection(Node, true);
+			graphEditor->SetNodeSelection(Node, true);
 		}
 	}
 
-	// Delete the duplicatable nodes
 	DeleteSelectedNodes();
 
-	CurrentGraphEditor->ClearSelectionSet();
+	graphEditor->ClearSelectionSet();
 
 	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(OldSelectedNodes); SelectedIter; ++SelectedIter)
 	{
 		if (UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter))
 		{
-			CurrentGraphEditor->SetNodeSelection(Node, true);
+			graphEditor->SetNodeSelection(Node, true);
 		}
 	}
 }
 
-void FInputSMEditor::CutSelectedNodes()
+void FInputSMEditor::CopySelectedNodesToClipboard()
 {
-	CopySelectedNodes();
-	DeleteSelectedDuplicatableNodes();
-}
-
-bool FInputSMEditor::CanCutNodes() const
-{
-	return CanCopyNodes() && CanDeleteNodes();
-}
-
-void FInputSMEditor::CopySelectedNodes()
-{
-	// Export the selected nodes and place the text on the clipboard
 	FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
-	TArray<UInputSMGraphNode_Base*> SubNodes;
+
+	for (FGraphPanelSelectionSet::TIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{		
+		if (UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter)) 
+			Node->PrepareForCopying();
+		else
+			SelectedIter.RemoveCurrent();
+	}
 
 	FString ExportedText;
 
-	int32 CopySubNodeIndex = 0;
-	for (FGraphPanelSelectionSet::TIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
-	{
-		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
-		UInputSMGraphNode_Base* graphNode = Cast<UInputSMGraphNode_Base>(Node);
-		if (Node == nullptr)
-		{
-			SelectedIter.RemoveCurrent();
-			continue;
-		}
-
-		Node->PrepareForCopying();
-	}
-
-	for (int32 Idx = 0; Idx < SubNodes.Num(); Idx++)
-	{
-		SelectedNodes.Add(SubNodes[Idx]);
-		SubNodes[Idx]->PrepareForCopying();
-	}
-
 	FEdGraphUtilities::ExportNodesToText(SelectedNodes, ExportedText);
+	
 	FPlatformApplicationMisc::ClipboardCopy(*ExportedText);
 }
 
 bool FInputSMEditor::CanCopyNodes() const
 {
-	// If any of the nodes can be duplicated then we should allow copying
 	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+
 	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
 	{
 		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
-		if (Node && Node->CanDuplicateNode())
-		{
-			return true;
-		}
+
+		if (Node && Node->CanDuplicateNode()) return true;
 	}
 
 	return false;
@@ -480,46 +438,37 @@ bool FInputSMEditor::CanCopyNodes() const
 
 void FInputSMEditor::PasteNodes()
 {
-	if (TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin())
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	if (graphEditor.IsValid())
 	{
-		PasteNodesHere(CurrentGraphEditor->GetPasteLocation());
+		PasteNodesHere(graphEditor->GetPasteLocation());
 	}
 }
 
 void FInputSMEditor::PasteNodesHere(const FVector2D& Location)
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	if (!CurrentGraphEditor.IsValid())
-	{
-		return;
-	}
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	
+	if (!graphEditor.IsValid()) return;
 
-	// Undo/Redo support
+	UEdGraph* graph = graphEditor->GetCurrentGraph();
+
 	const FScopedTransaction Transaction(FGenericCommands::Get().Paste->GetDescription());
-	UEdGraph* EdGraph = CurrentGraphEditor->GetCurrentGraph();
-	UInputSMGraph* graph = Cast<UInputSMGraph>(EdGraph);
 
-	EdGraph->Modify();
-	if (graph)
-	{
-		graph->LockUpdates();
-	}
+	graph->Modify();
 
-	// Clear the selection set (newly pasted stuff will be selected)
-	CurrentGraphEditor->ClearSelectionSet();
+	graphEditor->ClearSelectionSet();
 
-	// Grab the text to paste from the clipboard.
 	FString TextToImport;
+	
 	FPlatformApplicationMisc::ClipboardPaste(TextToImport);
 
-	// Import the nodes
 	TSet<UEdGraphNode*> PastedNodes;
-	FEdGraphUtilities::ImportNodesFromText(EdGraph, TextToImport, /*out*/ PastedNodes);
+	
+	FEdGraphUtilities::ImportNodesFromText(graph, TextToImport, /*out*/ PastedNodes);
 
-	// Average position of nodes so we can move them while still maintaining relative distances to each other
 	FVector2D AvgNodePosition(0.0f, 0.0f);
 
-	// Number of nodes used to calculate AvgNodePosition
 	int32 AvgCount = 0;
 
 	for (TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
@@ -541,135 +490,65 @@ void FInputSMEditor::PasteNodesHere(const FVector2D& Location)
 		AvgNodePosition.Y *= InvNumNodes;
 	}
 
-	bool bPastedParentNode = false;
-
-	TMap<FGuid/*New*/, FGuid/*Old*/> NewToOldNodeMapping;
-
 	for (TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
 	{
-		UEdGraphNode* PasteNode = *It;
-		UInputSMGraphNode_Base* PasteAINode = Cast<UInputSMGraphNode_Base>(PasteNode);
-
-		if (PasteNode)
+		if (UEdGraphNode* PasteNode = *It)
 		{
-			bPastedParentNode = true;
-
-			// Select the newly pasted stuff
-			CurrentGraphEditor->SetNodeSelection(PasteNode, true);
+			graphEditor->SetNodeSelection(PasteNode, true);
 
 			PasteNode->NodePosX = (PasteNode->NodePosX - AvgNodePosition.X) + Location.X;
 			PasteNode->NodePosY = (PasteNode->NodePosY - AvgNodePosition.Y) + Location.Y;
-
 			PasteNode->SnapToGrid(16);
-
-			const FGuid OldGuid = PasteNode->NodeGuid;
-
-			// Give new node a different Guid from the old one
 			PasteNode->CreateNewGuid();
-
-			const FGuid NewGuid = PasteNode->NodeGuid;
-
-			NewToOldNodeMapping.Add(NewGuid, OldGuid);
 		}
 	}
 
-	FixupPastedNodes(EdGraph, PastedNodes, NewToOldNodeMapping);
+	graphEditor->NotifyGraphChanged();
 
-	if (graph)
-	{
-		graph->UnlockUpdates();
-	}
-
-	// Update UI
-	CurrentGraphEditor->NotifyGraphChanged();
-
-	UObject* GraphOwner = EdGraph->GetOuter();
-	if (GraphOwner)
+	if (UObject* GraphOwner = graph->GetOuter())
 	{
 		GraphOwner->PostEditChange();
 		GraphOwner->MarkPackageDirty();
 	}
 }
 
-void FInputSMEditor::FixupPastedNodes(UEdGraph* graph, const TSet<UEdGraphNode*>& PastedGraphNodes, const TMap<FGuid/*New*/, FGuid/*Old*/>& NewToOldNodeMapping)
-{
-	////// TODO
-	//////for (UEdGraphNode* node : PastedGraphNodes)
-	//////{
-	//////	if (UInputSMGraphNode_Base* graphNodeBase = Cast<UInputSMGraphNode_Base>(node))
-	//////	{
-	//////		TMap<UEdGraphNode*, FInputFrameStack> inputMapping;
-	//////		for (const FInputSMTransition& transition : graphNodeBase->GetTransitions())
-	//////		{
-	//////			if (graph->Nodes.IsValidIndex(transition.TargetIndex)) inputMapping.Add(graph->Nodes[transition.TargetIndex], transition.ActivationStack);
-	//////		}
-
-	//////		graphNodeBase->GetTransitions().Reset(graphNodeBase->GetTransitions().Num());
-
-	//////		for (UEdGraphPin* pin : graphNodeBase->Pins)
-	//////		{
-	//////			if (pin->Direction == EGPD_Output)
-	//////			{
-	//////				for (UEdGraphPin* linkedToPin : pin->LinkedTo)
-	//////				{
-	//////					UEdGraphNode* linkedToNode = linkedToPin->GetOwningNode();
-	//////					int32 linkedToNodeIndex = graph->Nodes.IndexOfByKey(linkedToNode);
-
-	//////					if (inputMapping.Contains(linkedToNode))
-	//////					{
-	//////						graphNodeBase->AddTransition(linkedToNodeIndex, inputMapping[linkedToNode]);
-	//////					}
-	//////					else
-	//////					{
-	//////						graphNodeBase->AddTransition(linkedToNodeIndex, FInputFrameStack());
-	//////					}
-	//////				}
-	//////			}
-	//////		}
-	//////	}
-	//////}
-}
-
 bool FInputSMEditor::CanPasteNodes() const
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	if (!CurrentGraphEditor.IsValid())
-	{
-		return false;
-	}
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	
+	if (!graphEditor.IsValid()) return false;
 
 	FString ClipboardContent;
+	
 	FPlatformApplicationMisc::ClipboardPaste(ClipboardContent);
 
-	return FEdGraphUtilities::CanImportNodesFromText(CurrentGraphEditor->GetCurrentGraph(), ClipboardContent);
+	return FEdGraphUtilities::CanImportNodesFromText(graphEditor->GetCurrentGraph(), ClipboardContent);
 }
 
 void FInputSMEditor::DuplicateNodes()
 {
-	CopySelectedNodes();
+	CopySelectedNodesToClipboard();
 	PasteNodes();
-}
-
-bool FInputSMEditor::CanDuplicateNodes() const
-{
-	return CanCopyNodes();
 }
 
 bool FInputSMEditor::CanCreateComment() const
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	return CurrentGraphEditor.IsValid() ? (CurrentGraphEditor->GetNumberOfSelectedNodes() != 0) : false;
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	return graphEditor.IsValid() ? (graphEditor->GetNumberOfSelectedNodes() != 0) : false;
 }
 
 void FInputSMEditor::OnCreateComment()
 {
-	TSharedPtr<SGraphEditor> CurrentGraphEditor = UpdateGraphEdPtr.Pin();
-	if (UEdGraph* EdGraph = CurrentGraphEditor.IsValid() ? CurrentGraphEditor->GetCurrentGraph() : nullptr)
+	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
+	if (graphEditor.IsValid())
 	{
-		TSharedPtr<FEdGraphSchemaAction> Action = EdGraph->GetSchema()->GetCreateCommentAction();
-		if (Action.IsValid())
+		if (UEdGraph* graph = graphEditor->GetCurrentGraph())
 		{
-			Action->PerformAction(EdGraph, nullptr, FVector2D());
+			TSharedPtr<FEdGraphSchemaAction> Action = graph->GetSchema()->GetCreateCommentAction();
+			if (Action.IsValid())
+			{
+				Action->PerformAction(graph, nullptr, FVector2D());
+			}
 		}
 	}
 }

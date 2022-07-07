@@ -81,6 +81,8 @@ public:
 
 	virtual FText GetNodeTitle(ENodeTitleType::Type TitleType) const override;
 
+	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override;
+
 	UInputSMGraphNode_State* GetPreviousState() const;
 
 	UInputSMGraphNode_State* GetNextState() const;

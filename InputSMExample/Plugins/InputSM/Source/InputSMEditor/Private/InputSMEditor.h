@@ -35,8 +35,6 @@ protected:
 
 private:
 
-	TSharedRef<class SGraphEditor> CreateGraphEditorWidget(UEdGraph* InGraph);
-
 	void CreateInternalWidgets();
 
 	TSharedRef<SDockTab> SpawnTab_Properties(const FSpawnTabArgs& Args);
@@ -65,31 +63,26 @@ public:
 
 	// Delegates for graph editor commands
 	void SelectAllNodes();
-	bool CanSelectAllNodes() const;
+	bool CanSelectAllNodes() const { return true; }
 	void DeleteSelectedNodes();
 	bool CanDeleteNodes() const;
-	void DeleteSelectedDuplicatableNodes();
 	void CutSelectedNodes();
-	bool CanCutNodes() const;
-	void CopySelectedNodes();
+	bool CanCutNodes() const { return CanCopyNodes() && CanDeleteNodes(); }
+	void CopySelectedNodesToClipboard();
 	bool CanCopyNodes() const;
 	void PasteNodes();
 	void PasteNodesHere(const FVector2D& Location);
 	bool CanPasteNodes() const;
 	void DuplicateNodes();
-	bool CanDuplicateNodes() const;
+	bool CanDuplicateNodes() const { return CanCopyNodes(); }
 
 	bool CanCreateComment() const;
 	void OnCreateComment();
 
 protected:
 
-	void FixupPastedNodes(UEdGraph* graph, const TSet<UEdGraphNode*>& NewPastedGraphNodes, const TMap<FGuid/*New*/, FGuid/*Old*/>& NewToOldNodeMapping);
-
-protected:
-
 	/** Currently focused graph */
-	TWeakPtr<SGraphEditor> UpdateGraphEdPtr;
+	TWeakPtr<SGraphEditor> GraphEditorPtr;
 
 	/** The command list for this editor */
 	TSharedPtr<FUICommandList> GraphEditorCommands;

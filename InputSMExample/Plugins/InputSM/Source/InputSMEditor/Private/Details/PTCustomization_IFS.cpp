@@ -110,7 +110,6 @@ public:
 					SNew(SGridPanel)
 
 					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_315)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 7); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -121,7 +120,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_0)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 0); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -132,7 +130,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_45)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 1); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -144,7 +141,6 @@ public:
 					]
 
 					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_270)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 6); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -155,7 +151,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_90)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 2); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -167,7 +162,6 @@ public:
 					]
 
 					+ SGridPanel::Slot(0, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_225)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 5); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -178,7 +172,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_180)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 4); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -189,7 +182,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_135)
 					.OnClicked_Lambda([this]() { return ClickForStick(0, 3); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -206,7 +198,6 @@ public:
 					SNew(SGridPanel)
 
 					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_315)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 7); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -217,7 +208,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_0)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 0); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -228,7 +218,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_45)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 1); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -240,7 +229,6 @@ public:
 					]
 
 					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_270)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 6); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -251,7 +239,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_90)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 2); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -263,7 +250,6 @@ public:
 					]
 
 					+ SGridPanel::Slot(0, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_225)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 5); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -274,7 +260,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_180)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 4); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -285,7 +270,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(2, 2)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_LeftStick_135)
 					.OnClicked_Lambda([this]() { return ClickForStick(1, 3); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -347,7 +331,6 @@ public:
 					SNew(SGridPanel)
 
 					+ SGridPanel::Slot(0, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_X)
 					.OnClicked_Lambda([this]() { return ClickForTrigger(8); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -366,7 +349,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(0, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_A)
 					.OnClicked_Lambda([this]() { return ClickForTrigger(10); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -385,7 +367,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 0)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_Y)
 					.OnClicked_Lambda([this]() { return ClickForTrigger(12); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[
@@ -404,7 +385,6 @@ public:
 						]
 					]
 					+ SGridPanel::Slot(1, 1)[SNew(SButton).ContentPadding(0)
-					//.ButtonColorAndOpacity_Raw(this, &SInputFrameWidget::ColorAndOpacity_B)
 					.OnClicked_Lambda([this]() { return ClickForTrigger(14); })
 					.VAlign(VAlign_Center).HAlign(HAlign_Center)
 						[

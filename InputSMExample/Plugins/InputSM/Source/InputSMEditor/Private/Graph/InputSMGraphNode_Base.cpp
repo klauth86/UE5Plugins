@@ -107,6 +107,23 @@ FText UInputSMGraphNode_Transition::GetNodeTitle(ENodeTitleType::Type TitleType)
 	return FText::Format(NSLOCTEXT("UInputSMGraphNode_Transition", "NodeTitle", "{PrevState} => {NextState}"), Args);
 }
 
+void UInputSMGraphNode_Transition::PinConnectionListChanged(UEdGraphPin* Pin)
+{
+	if (Pin->LinkedTo.Num() == 0)
+	{
+		// Commit suicide; transitions must always have an input and output connection
+		Modify();
+
+		// Our parent graph will have our graph in SubGraphs so needs to be modified to record that.
+		if (UEdGraph* ParentGraph = GetGraph())
+		{
+			ParentGraph->Modify();
+		}
+
+		DestroyNode();
+	}
+}
+
 UInputSMGraphNode_State* UInputSMGraphNode_Transition::GetPreviousState() const
 {
 	if (Pins[0]->LinkedTo.Num() > 0)
