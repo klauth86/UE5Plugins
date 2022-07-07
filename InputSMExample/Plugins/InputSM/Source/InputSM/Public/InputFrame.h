@@ -48,8 +48,8 @@ public:
             uint16 RightTrigger : 2;
 
             uint16 X : 2;
-            uint16 Y : 2;
             uint16 A : 2;
+            uint16 Y : 2;
             uint16 B : 2;
         };
     };
