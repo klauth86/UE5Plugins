@@ -3,105 +3,52 @@
 #pragma once
 
 #include "UObject/NoExportTypes.h"
+#include "InputFrame.h"
 #include "InputSM.generated.h"
 
 class UEdGraph;
 
 USTRUCT()
-struct INPUTSM_API FInputFrame
+struct INPUTSM_API FInputSM_Transition
 {
 	GENERATED_USTRUCT_BODY()
 
 public:
 
-	static const uint16 PRESS_MASK = 0b01;
-	static const uint16 HOLD_MASK = 0b10;
-	static const uint16 FULL_MASK = 0b11;
+	FInputSM_Transition() { TargetIndex = INDEX_NONE; ActivationStack.Reset(); ResetActiveFrame(); }
 
-	FInputFrame() { Reset(); }
+	void ProcessInput(const FInputFrame& inputFrame);
 
-	void Reset() { LeftStickHor = LeftStickVer = RightStickHor = RightStickVer = 0; PackedBits = 0; }
+	bool IsOpen() const { return ActivationStack.Frames.Num() == ActiveFrameIndex + 1; }
 
-	void Reset_LeftStick() { LeftStickHor = LeftStickVer = 0; }
-
-	void Reset_RightStick() { RightStickHor = RightStickVer = 0; }
-
-	UPROPERTY()
-	float LeftStickHor;
-	UPROPERTY()
-	float LeftStickVer;
-	UPROPERTY()
-	float RightStickHor;
-	UPROPERTY()
-	float RightStickVer;
-
-	union
-	{
-		UPROPERTY()
-		uint16 PackedBits;
-		
-		struct
-		{
-			uint16 LeftUpperTrigger : 2;
-			uint16 LeftTrigger : 2;
-			uint16 RightUpperTrigger : 2;
-			uint16 RightTrigger : 2;
-
-			uint16 X : 2;
-			uint16 Y : 2;
-			uint16 A : 2;
-			uint16 B : 2;
-		};
-	};
-};
-
-USTRUCT()
-struct INPUTSM_API FInputFrameStack
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-
-	FInputFrameStack() { Frames.Empty(); ActiveFrameIndex = INDEX_NONE; }
-
-	UPROPERTY()
-	TArray<FInputFrame> Frames;
-
-	int32 ActiveFrameIndex;
-
-	bool IsOpen() const { return Frames.Num() == ActiveFrameIndex; }
-};
-
-USTRUCT()
-struct INPUTSM_API FInputSMTransition
-{
-	GENERATED_USTRUCT_BODY()
-
-public:
-
-	FInputSMTransition() { TargetIndex = INDEX_NONE; }
+	void ResetActiveFrame() { ActiveFrameIndex = INDEX_NONE; }
 
 	UPROPERTY()
 		int32 TargetIndex;
 
 	UPROPERTY()
 		FInputFrameStack ActivationStack;
+
+	int32 ActiveFrameIndex;
 };
 
 USTRUCT()
-struct INPUTSM_API FInputSMNode
+struct INPUTSM_API FInputSM_State
 {
 	GENERATED_USTRUCT_BODY()
 
 public:
 
-	FInputSMNode() {}
+	FInputSM_State() { StateName = NAME_None; StateAsset = nullptr; Transitions.Empty(); }
 
 	UPROPERTY()
-		TArray<FInputSMTransition> Transitions;
+		FName StateName;
 
 	UPROPERTY()
-		UObject* NodeAsset;
+		UObject* StateAsset;
+
+	UPROPERTY()
+		TArray<FInputSM_Transition> Transitions;
 };
 
 UCLASS()
@@ -116,13 +63,27 @@ public:
 		UEdGraph* EdGraph;
 #endif
 
-	TArray<FInputSMNode>& GetNodes() { return Nodes; }
+	TArray<FInputSM_State>& GetStates() { return States; }
+
+	const FInputSM_State* GetActiveState() const { return States.IsValidIndex(ActiveStateIndex) ? &States[ActiveStateIndex] : nullptr; }
+
+	void Reset(int32 newStatesNum = 0) { StartStateIndex = INDEX_NONE; States.Empty(newStatesNum); }
+
+	void Start() { ActiveStateIndex = StartStateIndex; }
+
+	void Stop() { ActiveStateIndex = INDEX_NONE; }
+
+	bool ProcessInput(const FInputFrame& inputFrame);
+
+	void SetStartStateIndex(int32 startStateIndex) { StartStateIndex = startStateIndex; }
 
 protected:
 
 	UPROPERTY()
-		int32 ActiveNodeIndex = INDEX_NONE;
+		TArray<FInputSM_State> States;
 
 	UPROPERTY()
-		TArray<FInputSMNode> Nodes;
+		int32 StartStateIndex = INDEX_NONE;
+
+	int32 ActiveStateIndex = INDEX_NONE;
 };

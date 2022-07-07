@@ -5,7 +5,7 @@
 #include "ATActions/ATActions_InputSM.h"
 #include "Graph/InputSMGraphNodeFactory.h"
 #include "PropertyEditorModule.h"
-#include "InputSM.h"
+#include "InputFrame.h"
 #include "Details/PTCustomization_IFS.h"
 
 #define LOCTEXT_NAMESPACE "FInputSMEditorModule"

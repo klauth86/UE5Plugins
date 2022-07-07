@@ -37,6 +37,8 @@ public:
 
 	virtual bool CanUserDeleteNode() const override { return false; }
 
+	UEdGraphPin* GetOutputPin() const { return Pins[0]; }
+
 	UEdGraphNode* GetOutputNode() const;
 
 	static const FName EntryOutputPinName;
@@ -58,6 +60,12 @@ public:
 	UEdGraphPin* GetInputPin() const { return Pins[0]; }
 	
 	UEdGraphPin* GetOutputPin() const { return Pins[1]; }
+
+	FName GetStateName() const { return StateName; }
+
+	void SetStateName(FName stateName) { StateName = stateName; }
+
+	UObject* GetStateAsset() const { return StateAsset; }
 
 	void SetStateAsset(UObject* stateAsset) { StateAsset = stateAsset; }
 
