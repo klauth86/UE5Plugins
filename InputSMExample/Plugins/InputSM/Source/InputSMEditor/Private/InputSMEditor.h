@@ -35,8 +35,6 @@ protected:
 
 private:
 
-	void CreateInternalWidgets();
-
 	TSharedRef<SDockTab> SpawnTab_Properties(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_Graph(const FSpawnTabArgs& Args);
 
@@ -52,7 +50,7 @@ public:
 	virtual ~FInputSMEditor();
 
 	FGraphPanelSelectionSet GetSelectedNodes() const;
-	void OnSelectedNodesChanged(const TSet<class UObject*>& NewSelection);
+	void OnSelectionChanged(const TSet<UObject*>& selectedNodes);
 
 	//~ Begin FEditorUndoClient Interface
 	virtual void PostUndo(bool bSuccess) override;
@@ -65,16 +63,16 @@ public:
 	void SelectAllNodes();
 	bool CanSelectAllNodes() const { return true; }
 	void DeleteSelectedNodes();
-	bool CanDeleteNodes() const;
+	bool CanDeleteSelectedNodes() const;
 	void CutSelectedNodes();
-	bool CanCutNodes() const { return CanCopyNodes() && CanDeleteNodes(); }
+	bool CanCutSelectedNodes() const { return CanCopySelectedNodesToClipboard() && CanDeleteSelectedNodes(); }
 	void CopySelectedNodesToClipboard();
-	bool CanCopyNodes() const;
+	bool CanCopySelectedNodesToClipboard() const;
 	void PasteNodes();
 	void PasteNodesHere(const FVector2D& Location);
 	bool CanPasteNodes() const;
 	void DuplicateNodes();
-	bool CanDuplicateNodes() const { return CanCopyNodes(); }
+	bool CanDuplicateNodes() const { return CanCopySelectedNodesToClipboard(); }
 
 	bool CanCreateComment() const;
 	void OnCreateComment();

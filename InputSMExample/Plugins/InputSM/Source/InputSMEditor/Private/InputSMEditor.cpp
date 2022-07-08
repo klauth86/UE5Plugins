@@ -1,7 +1,6 @@
 #include "InputSMEditor.h"
 #include "Framework/Application/SlateApplication.h"
 #include "Editor/EditorEngine.h"
-#include "EngineGlobals.h"
 #include "Graph/InputSMGraph.h"
 #include "Graph/InputSMGraphNode_Base.h"
 #include "ScopedTransaction.h"
@@ -16,7 +15,6 @@
 const FName FInputSMEditor::InputSMAppIdentifier(TEXT("InputSMApp"));
 
 const FName FInputSMEditor::InputSMPropertiesTabId(TEXT("InputSM_PropertiesTab"));
-
 const FName FInputSMEditor::InputSMGraphTabId(TEXT("InputSM_GraphTab"));
 
 void FInputSMEditor::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
@@ -47,9 +45,10 @@ void FInputSMEditor::UnregisterTabSpawners(const TSharedRef<class FTabManager>& 
 
 void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSM* inputSM)
 {
+	check(inputSM != NULL);
+
 	InputSM = inputSM;
-	
-	check(InputSM != NULL);
+	InputSM->SetFlags(RF_Transactional);
 
 	TSharedRef<FTabManager::FLayout> StandaloneDefaultLayout = FTabManager::NewLayout("Standalone_InputSM_Layout")
 		->AddArea
@@ -67,13 +66,13 @@ void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr<
 				->Split
 				(
 					FTabManager::NewStack()
-					->SetSizeCoefficient(0.35f)
+					->SetSizeCoefficient(0.4f)
 					->AddTab(InputSMPropertiesTabId, ETabState::OpenedTab)
 				)
 				->Split
 				(
 					FTabManager::NewStack()
-					->SetSizeCoefficient(0.65f)
+					->SetSizeCoefficient(0.6f)
 					->AddTab(InputSMGraphTabId, ETabState::OpenedTab)
 				)
 			)
@@ -165,24 +164,21 @@ void FInputSMEditor::SaveAsset_Execute()
 	FAssetEditorToolkit::SaveAsset_Execute();
 }
 
-void FInputSMEditor::CreateInternalWidgets()
+TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Properties(const FSpawnTabArgs& Args)
 {
+	check(Args.GetTabId() == InputSMPropertiesTabId);
+
 	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+	
 	FDetailsViewArgs DetailsViewArgs = FDetailsViewArgs();
 	DetailsViewArgs.bUpdatesFromSelection = false;
 	DetailsViewArgs.bLockable = false;
 	DetailsViewArgs.bAllowSearch = false;
 	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
 	DetailsViewArgs.bHideSelectionTip = true;
+	
 	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
 	DetailsView->SetObject(NULL);
-}
-
-TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Properties(const FSpawnTabArgs& Args)
-{
-	check(Args.GetTabId() == InputSMPropertiesTabId);
-
-	CreateInternalWidgets();
 
 	TSharedRef<SDockTab> SpawnedTab = SNew(SDockTab)
 		.Label(LOCTEXT("PropertiesTab", "Details"))
@@ -211,16 +207,14 @@ TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Graph(const FSpawnTabArgs& Args)
 
 	check(InputSM->EdGraph != NULL);
 
-	// Create the appearance info
 	FGraphAppearanceInfo AppearanceInfo;
 	AppearanceInfo.CornerText = LOCTEXT("AppearanceCornerText", "Input State Machine");
 
 	SGraphEditor::FGraphEditorEvents InEvents;
-	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSMEditor::OnSelectedNodesChanged);
+	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSMEditor::OnSelectionChanged);
 
 	CreateCommandList();
 
-	// Make title bar
 	TSharedRef<SWidget> TitleBarWidget =
 		SNew(SBorder)
 		.BorderImage(FEditorStyle::GetBrush(TEXT("Graph.TitleBackground")))
@@ -228,13 +222,13 @@ TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Graph(const FSpawnTabArgs& Args)
 		[
 			SNew(SHorizontalBox)
 			+ SHorizontalBox::Slot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1.f)
-		[
-			SNew(STextBlock)
-			.Text(LOCTEXT("TheQueryGraphLabel", "Input State Machine Graph"))
-		.TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText"))
-		]
+			.HAlign(HAlign_Center)
+			.FillWidth(1.f)
+			[
+				SNew(STextBlock)
+				.Text(LOCTEXT("TheQueryGraphLabel", "Input State Machine Graph"))
+				.TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText"))
+			]
 		];
 
 	return SNew(SDockTab)
@@ -268,10 +262,7 @@ FInputSMEditor::~FInputSMEditor()
 
 void FInputSMEditor::CreateCommandList()
 {
-	if (GraphEditorCommands.IsValid())
-	{
-		return;
-	}
+	if (GraphEditorCommands.IsValid()) return;
 
 	GraphEditorCommands = MakeShareable(new FUICommandList);
 
@@ -286,17 +277,17 @@ void FInputSMEditor::CreateCommandList()
 
 	GraphEditorCommands->MapAction(FGenericCommands::Get().Delete,
 		FExecuteAction::CreateRaw(this, &FInputSMEditor::DeleteSelectedNodes),
-		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanDeleteNodes)
+		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanDeleteSelectedNodes)
 	);
 
 	GraphEditorCommands->MapAction(FGenericCommands::Get().Copy,
 		FExecuteAction::CreateRaw(this, &FInputSMEditor::CopySelectedNodesToClipboard),
-		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanCopyNodes)
+		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanCopySelectedNodesToClipboard)
 	);
 
 	GraphEditorCommands->MapAction(FGenericCommands::Get().Cut,
 		FExecuteAction::CreateRaw(this, &FInputSMEditor::CutSelectedNodes),
-		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanCutNodes)
+		FCanExecuteAction::CreateRaw(this, &FInputSMEditor::CanCutSelectedNodes)
 	);
 
 	GraphEditorCommands->MapAction(FGenericCommands::Get().Paste,
@@ -317,39 +308,28 @@ void FInputSMEditor::CreateCommandList()
 
 FGraphPanelSelectionSet FInputSMEditor::GetSelectedNodes() const
 {
-	FGraphPanelSelectionSet CurrentSelection;
+	FGraphPanelSelectionSet selectedNodes;
 	
 	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 	{
-		if (graphEditor.IsValid()) CurrentSelection = graphEditor->GetSelectedNodes();
-	}
-
-	return CurrentSelection;
-}
-
-void FInputSMEditor::OnSelectedNodesChanged(const TSet<class UObject*>& NewSelection)
-{
-	TArray<UObject*> Selection;
-
-	if (NewSelection.Num())
-	{
-		for (TSet<class UObject*>::TConstIterator SetIt(NewSelection); SetIt; ++SetIt)
+		if (graphEditor.IsValid())
 		{
-			if (UInputSMGraphNode_Base* GraphNode = Cast<UInputSMGraphNode_Base>(*SetIt))
-			{
-				Selection.Add(GraphNode);
-			}
+			selectedNodes = graphEditor->GetSelectedNodes();
 		}
 	}
 
-	return Selection.Num() == 1 ? DetailsView->SetObjects(Selection) : DetailsView->SetObject(NULL);
+	return selectedNodes;
+}
+
+void FInputSMEditor::OnSelectionChanged(const TSet<UObject*>& selectedNodes)
+{
+	return selectedNodes.Num() == 1 ? DetailsView->SetObject(*selectedNodes.begin()) : DetailsView->SetObject(NULL);
 }
 
 void FInputSMEditor::PostUndo(bool bSuccess)
 {
 	if (bSuccess)
 	{
-		// Clear selection, to avoid holding refs to nodes that go away
 		if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 		{
 			if (graphEditor.IsValid())
@@ -367,7 +347,6 @@ void FInputSMEditor::PostRedo(bool bSuccess)
 {
 	if (bSuccess)
 	{
-		// Clear selection, to avoid holding refs to nodes that go away
 		if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 		{
 			if (graphEditor.IsValid())
@@ -385,7 +364,10 @@ void FInputSMEditor::SelectAllNodes()
 {
 	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
 	{
-		if (graphEditor.IsValid()) graphEditor->SelectAllNodes();
+		if (graphEditor.IsValid())
+		{
+			graphEditor->SelectAllNodes();
+		}
 	}
 }
 
@@ -420,7 +402,7 @@ void FInputSMEditor::DeleteSelectedNodes()
 	}
 }
 
-bool FInputSMEditor::CanDeleteNodes() const
+bool FInputSMEditor::CanDeleteSelectedNodes() const
 {
 	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
 	
@@ -486,7 +468,7 @@ void FInputSMEditor::CopySelectedNodesToClipboard()
 	FPlatformApplicationMisc::ClipboardCopy(*ExportedText);
 }
 
-bool FInputSMEditor::CanCopyNodes() const
+bool FInputSMEditor::CanCopySelectedNodesToClipboard() const
 {
 	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
 
