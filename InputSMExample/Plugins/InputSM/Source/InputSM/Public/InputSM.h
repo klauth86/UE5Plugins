@@ -51,7 +51,7 @@ public:
 		TArray<FInputSM_Transition> Transitions;
 };
 
-UCLASS()
+UCLASS(BlueprintType)
 class INPUTSM_API UInputSM : public UObject
 {
 	GENERATED_BODY()
@@ -67,12 +67,13 @@ public:
 
 	const FInputSM_State* GetActiveState() const { return States.IsValidIndex(ActiveStateIndex) ? &States[ActiveStateIndex] : nullptr; }
 
-	void Reset(int32 newStatesNum = 0) { States.Empty(newStatesNum); }
-
+	UFUNCTION(BlueprintCallable, Category = "Input SM")
 	bool Start() { return (ActiveStateIndex == INDEX_NONE) ? SetActiveStateIndex(0) : false; }
 
+	UFUNCTION(BlueprintCallable, Category = "Input SM")
 	bool Stop() { return (ActiveStateIndex != INDEX_NONE) ? SetActiveStateIndex(INDEX_NONE) : false; }
 
+	UFUNCTION(BlueprintCallable, Category = "Input SM")
 	bool ProcessInput(const FInputFrame& inputFrame);
 
 protected:

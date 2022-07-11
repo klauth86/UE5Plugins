@@ -4,7 +4,7 @@
 
 #include "InputFrame.generated.h"
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct INPUTSM_API FInputFrame
 {
     GENERATED_USTRUCT_BODY()
@@ -23,35 +23,66 @@ public:
 
     void Reset_RightStick() { RightStickHor = RightStickVer = 0; }
 
-    UPROPERTY()
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
     float LeftStickHor;
-    UPROPERTY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
     float LeftStickVer;
-    UPROPERTY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
     float RightStickHor;
-    UPROPERTY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
     float RightStickVer;
 
 #if CPP
     union
     {
-#endif
-        UPROPERTY()
-        uint16 PackedBits;
-
-#if CPP
         struct
         {
-            uint16 LeftUpperTrigger : 2;
-            uint16 LeftTrigger : 2;
-            uint16 RightUpperTrigger : 2;
-            uint16 RightTrigger : 2;
+#endif
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 LeftUpperTrigger : 1;
 
-            uint16 X : 2;
-            uint16 A : 2;
-            uint16 Y : 2;
-            uint16 B : 2;
+            uint16 LeftUpperTrigger_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 LeftTrigger : 1;
+
+            uint16 LeftTrigger_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 RightUpperTrigger : 1;
+
+            uint16 RightUpperTrigger_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 RightTrigger : 1;
+
+            uint16 RightTrigger_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 X : 1;
+
+            uint16 X_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 A : 1;
+
+            uint16 A_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 Y : 1;
+
+            uint16 Y_H : 1;
+
+            UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Input Frame")
+                uint16 B : 1;
+
+            uint16 B_H : 1;
+#if CPP
         };
+        uint16 PackedBits;
     };
 #endif
 };
