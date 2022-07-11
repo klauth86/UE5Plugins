@@ -2,19 +2,23 @@
 
 #include "InputSM.h"
 
-void FInputSM_Transition::ProcessInput(const FInputFrame& inputFrame)
+void FInputSM_Transition::ProcessInput(uint16 packedBits)
 {
 	if (ActivationStack.Frames.IsValidIndex(ActiveFrameIndex + 1))
 	{
-		if (inputFrame.PackedBits == ActivationStack.Frames[ActiveFrameIndex + 1].PackedBits)
+		if (packedBits == ActivationStack.Frames[ActiveFrameIndex + 1].PackedBits)
 		{
 			ActiveFrameIndex++;
 		}
 	}
 }
 
-bool UInputSM::ProcessInput(const FInputFrame& inputFrame)
+bool UInputSM::ProcessInput(UPARAM(ref) FInputFrame& inputFrame)
 {
+	uint16 packedBits = inputFrame.PackedBits;
+
+	inputFrame.Reset();
+
 	if (States.IsValidIndex(ActiveStateIndex))
 	{
 		FInputSM_State& activeState = States[ActiveStateIndex];
@@ -23,7 +27,7 @@ bool UInputSM::ProcessInput(const FInputFrame& inputFrame)
 		{
 			for (FInputSM_Transition& transition : activeState.Transitions)
 			{
-				transition.ProcessInput(inputFrame);
+				transition.ProcessInput(packedBits);
 
 				if (transition.IsOpen())
 				{

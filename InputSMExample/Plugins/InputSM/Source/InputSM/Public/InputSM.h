@@ -17,7 +17,7 @@ public:
 
 	FInputSM_Transition() { TargetIndex = INDEX_NONE; ActivationStack.Reset(); ResetActiveFrame(); }
 
-	void ProcessInput(const FInputFrame& inputFrame);
+	void ProcessInput(uint16 packedBits);
 
 	bool IsOpen() const { return ActivationStack.Frames.Num() == ActiveFrameIndex + 1; }
 
@@ -32,7 +32,7 @@ public:
 	int32 ActiveFrameIndex;
 };
 
-USTRUCT()
+USTRUCT(BlueprintType)
 struct INPUTSM_API FInputSM_State
 {
 	GENERATED_USTRUCT_BODY()
@@ -41,10 +41,10 @@ public:
 
 	FInputSM_State() { StateName = NAME_None; StateAsset = nullptr; Transitions.Empty(); }
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Input SM State")
 		FName StateName;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Input SM State")
 		UObject* StateAsset;
 
 	UPROPERTY()
@@ -65,7 +65,7 @@ public:
 
 	TArray<FInputSM_State>& GetStates() { return States; }
 
-	const FInputSM_State* GetActiveState() const { return States.IsValidIndex(ActiveStateIndex) ? &States[ActiveStateIndex] : nullptr; }
+	int32 GetActiveStateIndex() const { return ActiveStateIndex; }
 
 	UFUNCTION(BlueprintCallable, Category = "Input SM")
 	bool Start() { return (ActiveStateIndex == INDEX_NONE) ? SetActiveStateIndex(0) : false; }
@@ -74,7 +74,7 @@ public:
 	bool Stop() { return (ActiveStateIndex != INDEX_NONE) ? SetActiveStateIndex(INDEX_NONE) : false; }
 
 	UFUNCTION(BlueprintCallable, Category = "Input SM")
-	bool ProcessInput(const FInputFrame& inputFrame);
+	bool ProcessInput(UPARAM(ref) FInputFrame& inputFrame);
 
 protected:
 
@@ -82,8 +82,9 @@ protected:
 
 protected:
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly, Category = "Input SM")
 		TArray<FInputSM_State> States;
 
+	UPROPERTY(Transient, BlueprintReadOnly, Category = "Input SM")
 	int32 ActiveStateIndex = INDEX_NONE;
 };

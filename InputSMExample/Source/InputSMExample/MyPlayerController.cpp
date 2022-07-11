@@ -3,6 +3,13 @@
 #include "MyPlayerController.h"
 #include "InputSM.h"
 
+void AMyPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (InputSM) InputSM->Stop();
+
+	Super::EndPlay(EndPlayReason);
+}
+
 void AMyPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -39,11 +46,12 @@ void AMyPlayerController::PostProcessInput(const float DeltaTime, const bool bGa
 
 	if (InputSM && InputSM->ProcessInput(InputFrame))
 	{
-		if (const FInputSM_State* state = InputSM->GetActiveState())
+		int32 activeStateIndex = InputSM->GetActiveStateIndex();
+
+		if (InputSM->GetStates().IsValidIndex(activeStateIndex))
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, *(state->StateName.ToString()));
+			FInputSM_State& activeState = InputSM->GetStates()[activeStateIndex];
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, *(activeState.StateName.ToString()));
 		}
 	}
-
-	InputFrame.Reset();
 }
