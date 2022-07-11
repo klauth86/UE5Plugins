@@ -27,15 +27,26 @@ bool UInputSM::ProcessInput(const FInputFrame& inputFrame)
 
 				if (transition.IsOpen())
 				{
-					ActiveStateIndex = transition.TargetIndex;
 					transition.ResetActiveFrame();
-
-					// Notify that state changed
-
-					return true;
+					
+					return SetActiveStateIndex(transition.TargetIndex);
 				}
 			}
 		}
+	}
+
+	return false;
+}
+
+bool UInputSM::SetActiveStateIndex(int32 newStateIndex)
+{
+	if (ActiveStateIndex != newStateIndex)
+	{
+		ActiveStateIndex = newStateIndex;
+
+		// Notify that state changed
+
+		return true;
 	}
 
 	return false;

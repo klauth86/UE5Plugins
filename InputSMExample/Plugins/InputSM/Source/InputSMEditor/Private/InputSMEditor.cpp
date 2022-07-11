@@ -48,6 +48,7 @@ void FInputSMEditor::InitEditor(const EToolkitMode::Type Mode, const TSharedPtr<
 	check(inputSM != NULL);
 
 	InputSM = inputSM;
+	
 	InputSM->SetFlags(RF_Transactional);
 
 	TSharedRef<FTabManager::FLayout> StandaloneDefaultLayout = FTabManager::NewLayout("Standalone_InputSM_Layout")
@@ -88,81 +89,6 @@ FText FInputSMEditor::GetBaseToolkitName() const { return LOCTEXT("BaseToolkitNa
 FString FInputSMEditor::GetWorldCentricTabPrefix() const { return LOCTEXT("WorldCentricTabPrefix", "InputSMEditor").ToString(); }
 
 FLinearColor FInputSMEditor::GetWorldCentricTabColorScale() const { return FLinearColor(0.0f, 0.0f, 0.2f, 0.5f); }
-
-void FInputSMEditor::SaveAsset_Execute()
-{
-	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
-	
-	//if (graphEditor.IsValid())
-	//{
-	//	UEdGraph* graph = graphEditor->GetCurrentGraph();
-
-	//	UInputSMGraphNode_Entry* GraphNodeEntry = nullptr;
-
-	//	TArray<UInputSMGraphNode_Transition*> Transitions;
-
-	//	TMap<UInputSMGraphNode_State* , int32> StatesMap;
-
-	//	for (UEdGraphNode* graphNode : graph->Nodes)
-	//	{
-	//		if (UInputSMGraphNode_Entry* graphNodeEntry = Cast<UInputSMGraphNode_Entry>(graphNode))
-	//		{
-	//			GraphNodeEntry = graphNodeEntry;
-	//		}
-	//		else if (UInputSMGraphNode_Transition* graphNodeTransition = Cast<UInputSMGraphNode_Transition>(graphNode))
-	//		{
-	//			Transitions.Add(graphNodeTransition);
-	//		}
-	//		else if (UInputSMGraphNode_State* graphNodeState = Cast<UInputSMGraphNode_State>(graphNode))
-	//		{
-	//			StatesMap.Add(graphNodeState, INDEX_NONE);
-	//		}
-	//	}
-
-	//	UInputSM* inputSm = graph->GetTypedOuter<UInputSM>();
-
-	//	inputSm->Reset(0); // Clear all
-
-	//	if (GraphNodeEntry)
-	//	{
-	//		UInputSMGraphNode_State* firstState = GraphNodeEntry->GetOutputPin()->LinkedTo.Num() > 0
-	//			? Cast<UInputSMGraphNode_State>(GraphNodeEntry->GetOutputPin()->LinkedTo[0]->GetOwningNode())
-	//			: nullptr;
-
-	//		if (firstState)
-	//		{
-	//			////// TODO We can analyse graph before and through out unaccessible parts
-	//			////// At the moment use simple and primary mapping
-
-	//			for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
-	//			{
-	//				int32 emplacedIndex = inputSm->GetStates().Emplace();
-	//				inputSm->GetStates()[emplacedIndex].StateName = statesMapEntry.Key->GetStateName();
-	//				inputSm->GetStates()[emplacedIndex].StateAsset = statesMapEntry.Key->GetStateAsset();
-	//				
-	//				statesMapEntry.Value = emplacedIndex;
-	//			}
-
-	//			inputSm->SetStartStateIndex(StatesMap[firstState]);
-
-	//			for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
-	//			{
-	//				TArray<UInputSMGraphNode_Transition*> transitions;
-	//				statesMapEntry.Key->GetTransitionList(transitions, true);
-
-	//				for (UInputSMGraphNode_Transition* transition : transitions)
-	//				{
-	//					int32 emplacedIndex = inputSm->GetStates()[statesMapEntry.Value].Transitions.Emplace();
-	//					inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].TargetIndex = StatesMap[transition->GetNextState()];
-	//					inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].ActivationStack = transition->ActivationStack;
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-
-	FAssetEditorToolkit::SaveAsset_Execute();
-}
 
 TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Properties(const FSpawnTabArgs& Args)
 {

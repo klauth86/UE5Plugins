@@ -9,4 +9,8 @@ UCLASS()
 class UInputSMGraph : public UEdGraph
 {
 	GENERATED_UCLASS_BODY()
+
+public:
+
+	virtual void PreSave(FObjectPreSaveContext SaveContext) override;
 };

@@ -29,10 +29,6 @@ public:
 	virtual FLinearColor GetWorldCentricTabColorScale() const override;
 	//~ End IToolkit Interface
 
-protected:
-
-	virtual void SaveAsset_Execute() override;
-
 private:
 
 	TSharedRef<SDockTab> SpawnTab_Properties(const FSpawnTabArgs& Args);

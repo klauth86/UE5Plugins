@@ -6,12 +6,72 @@
 #include "Graph/InputSMGraphSchemaAction_NewStateNode.h"
 #include "Classes/EditorStyleSettings.h"
 #include "EdGraphUtilities.h"
+#include "UObject/ObjectSaveContext.h"
 
 #define LOCTEXT_NAMESPACE "UInputSMGraphSchema"
 
 UInputSMGraph::UInputSMGraph(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	Schema = UInputSMGraphSchema::StaticClass();
+}
+
+void UInputSMGraph::PreSave(FObjectPreSaveContext SaveContext)
+{
+	Super::PreSave(SaveContext);
+
+	if (UInputSM* inputSM = GetTypedOuter<UInputSM>())
+	{
+		inputSM->GetStates().Empty();
+
+		if (UInputSMGraphNode_Entry* graphNodeEntry = Cast<UInputSMGraphNode_Entry>(Nodes[0]))
+		{
+			if (graphNodeEntry->GetOutputPin()->LinkedTo.Num() > 0)
+			{
+				if (UInputSMGraphNode_State* firstNode = Cast<UInputSMGraphNode_State>(graphNodeEntry->GetOutputPin()->LinkedTo[0]->GetOwningNode()))
+				{
+					TMap<UInputSMGraphNode_State*, int32> traversedNodes;
+
+					TQueue<UInputSMGraphNode_State*> nodesToTraverse;
+					nodesToTraverse.Enqueue(firstNode);
+					
+					UInputSMGraphNode_State* currentNode = nullptr;
+					while (nodesToTraverse.Dequeue(currentNode))
+					{
+						traversedNodes.Add(currentNode, inputSM->GetStates().Emplace());
+						inputSM->GetStates()[traversedNodes[currentNode]].StateName = currentNode->GetStateName();
+						inputSM->GetStates()[traversedNodes[currentNode]].StateAsset = currentNode->GetStateAsset();
+
+						TArray<UInputSMGraphNode_Transition*> transitionNodes;
+						currentNode->GetTransitionList(transitionNodes, true);
+
+						for (UInputSMGraphNode_Transition* transitionNode : transitionNodes)
+						{
+							UInputSMGraphNode_State* nextState = transitionNode->GetNextState();							
+							if (!traversedNodes.Contains(nextState)) nodesToTraverse.Enqueue(nextState);
+						}
+					}
+
+					TArray<UInputSMGraphNode_State*> traversedNodesOnly;
+					traversedNodes.GetKeys(traversedNodesOnly);
+
+					for (UInputSMGraphNode_State* traversedNode : traversedNodesOnly)
+					{
+						TArray<FInputSM_Transition>& traversedNodeTransitions = inputSM->GetStates()[traversedNodes[traversedNode]].Transitions;
+
+						TArray<UInputSMGraphNode_Transition*> transitionNodes;
+						traversedNode->GetTransitionList(transitionNodes, true);
+
+						for (UInputSMGraphNode_Transition* transitionNode : transitionNodes)
+						{
+							int32 emplacedTransition = traversedNodeTransitions.Emplace();
+							traversedNodeTransitions[emplacedTransition].TargetIndex = traversedNodes[transitionNode->GetNextState()];
+							traversedNodeTransitions[emplacedTransition].ActivationStack = transitionNode->ActivationStack;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 template<class T>

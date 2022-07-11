@@ -67,23 +67,22 @@ public:
 
 	const FInputSM_State* GetActiveState() const { return States.IsValidIndex(ActiveStateIndex) ? &States[ActiveStateIndex] : nullptr; }
 
-	void Reset(int32 newStatesNum = 0) { StartStateIndex = INDEX_NONE; States.Empty(newStatesNum); }
+	void Reset(int32 newStatesNum = 0) { States.Empty(newStatesNum); }
 
-	void Start() { ActiveStateIndex = StartStateIndex; }
+	bool Start() { return (ActiveStateIndex == INDEX_NONE) ? SetActiveStateIndex(0) : false; }
 
-	void Stop() { ActiveStateIndex = INDEX_NONE; }
+	bool Stop() { return (ActiveStateIndex != INDEX_NONE) ? SetActiveStateIndex(INDEX_NONE) : false; }
 
 	bool ProcessInput(const FInputFrame& inputFrame);
 
-	void SetStartStateIndex(int32 startStateIndex) { StartStateIndex = startStateIndex; }
+protected:
+
+	bool SetActiveStateIndex(int32 newStateIndex);
 
 protected:
 
 	UPROPERTY()
 		TArray<FInputSM_State> States;
-
-	UPROPERTY()
-		int32 StartStateIndex = INDEX_NONE;
 
 	int32 ActiveStateIndex = INDEX_NONE;
 };
