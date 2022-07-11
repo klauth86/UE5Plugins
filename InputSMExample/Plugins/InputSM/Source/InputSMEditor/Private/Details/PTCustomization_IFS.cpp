@@ -24,23 +24,31 @@ public:
 		, _Padding(FMargin(2.0f))
 	{}
 	SLATE_DEFAULT_SLOT(FArguments, Content)
-	SLATE_ATTRIBUTE(FVector2D, ContentScale)
-	SLATE_ARGUMENT(EHorizontalAlignment, HAlign)
-	SLATE_ARGUMENT(EVerticalAlignment, VAlign)
-	SLATE_ATTRIBUTE(FMargin, Padding)
-	SLATE_END_ARGS()
+		SLATE_ATTRIBUTE(FVector2D, ContentScale)
+		SLATE_ARGUMENT(EHorizontalAlignment, HAlign)
+		SLATE_ARGUMENT(EVerticalAlignment, VAlign)
+		SLATE_ATTRIBUTE(FMargin, Padding)
+		SLATE_END_ARGS()
 
-	FInputFrameStack* InputFrameStack;
+	TSharedPtr<IPropertyHandle> ParentPropertyHandle;
 
 	int32 FrameIndex;
 
-	FInputFrame* GetInputFrame() const { return InputFrameStack->Frames.IsValidIndex(FrameIndex) ? &InputFrameStack->Frames[FrameIndex] : nullptr; }
+	FInputFrame* GetInputFrame() const
+	{
+		if (FInputFrameStack* inputFrameStack = GetPropertyAs<FInputFrameStack>(ParentPropertyHandle))
+		{
+			if (inputFrameStack->Frames.IsValidIndex(FrameIndex)) return &inputFrameStack->Frames[FrameIndex];
+		}
 
-	void Construct(FArguments InArgs, FInputFrameStack* inputFrameStack, int32 frameIndex)
+		return nullptr;
+	}
+
+	void Construct(FArguments InArgs, TSharedPtr<IPropertyHandle> parentPropertyHandle, int32 frameIndex)
 	{
 		SetContentScale(InArgs._ContentScale);
 
-		InputFrameStack = inputFrameStack;
+		ParentPropertyHandle = parentPropertyHandle;
 		
 		FrameIndex = frameIndex;
 
@@ -421,6 +429,8 @@ public:
 			if (!isHold) inputFrame->PackedBits += offsettedMask & (value + (FInputFrame::PRESS_MASK << bitOffset));
 		}
 
+		ModifyFirstOuterObject(ParentPropertyHandle);
+
 		return FReply::Handled();
 	}
 
@@ -688,6 +698,8 @@ public:
 			}
 		}
 
+		ModifyFirstOuterObject(ParentPropertyHandle);
+
 		return FReply::Handled();
 	}
 
@@ -767,27 +779,24 @@ void FPTCustomization_IFS::CustomizeChildren(TSharedRef<IPropertyHandle> Propert
 			]
 	];
 
-	if (FInputFrameStack* InputFrameStack = GetPropertyAs<FInputFrameStack>())
+	if (FInputFrameStack* InputFrameStack = GetPropertyAs<FInputFrameStack>(InternalPropertyHandle))
 	{
 		for (int32 i = 0; i < InputFrameStack->Frames.Num(); i++)
 		{
-			AddWidget(InputFrameStack, i);
+			AddInputFrameWidget(i);
 		}
 	}
 }
 
 FReply FPTCustomization_IFS::Add()
 {
-	if (FInputFrameStack* inputFrameStack = GetPropertyAs<FInputFrameStack>())
+	if (FInputFrameStack* inputFrameStack = GetPropertyAs<FInputFrameStack>(InternalPropertyHandle))
 	{
 		int32 emplacedIndex = inputFrameStack->Frames.Emplace();
+		AddInputFrameWidget(emplacedIndex);
 
-		if (emplacedIndex > 0)
-		{
-			FInputFrame& parentElement = inputFrameStack->Frames[emplacedIndex - 1];
-			FInputFrame& emplacedElement = inputFrameStack->Frames[emplacedIndex];
-		}
-		AddWidget(inputFrameStack, emplacedIndex);
+
+		ModifyFirstOuterObject(InternalPropertyHandle);
 	}
 
 	return FReply::Handled();
@@ -795,30 +804,33 @@ FReply FPTCustomization_IFS::Add()
 
 FReply FPTCustomization_IFS::Remove(TSharedPtr<class SInputFrameWidget> inputFrameWidget, TSharedPtr<SButton> button)
 {
-	grid->RemoveSlot(inputFrameWidget.ToSharedRef());
-	grid->RemoveSlot(button.ToSharedRef());
-
-	if (FChildren* children = grid->GetChildren())
+	if (FInputFrameStack* InputFrameStack = GetPropertyAs<FInputFrameStack>(InternalPropertyHandle))
 	{
-		size_t num = children->Num();
-		for (size_t i = 0; i < num; i++)
+		grid->RemoveSlot(inputFrameWidget.ToSharedRef());
+		grid->RemoveSlot(button.ToSharedRef());
+
+		if (FChildren* children = grid->GetChildren())
 		{
-			TSharedRef<SInputFrameWidget> ref = StaticCastSharedRef<SInputFrameWidget>(children->GetChildAt(i));
-			if (ref->FrameIndex > inputFrameWidget->FrameIndex) ref->FrameIndex--;
+			size_t num = children->Num();
+			for (size_t i = 0; i < num; i++)
+			{
+				TSharedRef<SInputFrameWidget> ref = StaticCastSharedRef<SInputFrameWidget>(children->GetChildAt(i));
+				if (ref->FrameIndex > inputFrameWidget->FrameIndex) ref->FrameIndex--;
+			}
 		}
-	}
 
-	if (FInputFrameStack* InputFrameStack = GetPropertyAs<FInputFrameStack>())
-	{
 		InputFrameStack->Frames.RemoveAt(inputFrameWidget->FrameIndex);
+
+
+		ModifyFirstOuterObject(InternalPropertyHandle);
 	}
 
 	return FReply::Handled();
 }
 
-void FPTCustomization_IFS::AddWidget(FInputFrameStack* inputFrameStack, int32 frameIndex)
+void FPTCustomization_IFS::AddInputFrameWidget(int32 frameIndex)
 {
-	TSharedPtr<SInputFrameWidget> element = SNew(SInputFrameWidget, inputFrameStack, frameIndex);
+	TSharedPtr<SInputFrameWidget> element = SNew(SInputFrameWidget, InternalPropertyHandle, frameIndex);
 
 	TSharedPtr<SButton> button;
 

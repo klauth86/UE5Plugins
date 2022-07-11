@@ -30,7 +30,7 @@ protected:
 
 	FReply Remove(TSharedPtr<class SInputFrameWidget> inputFrameWidget, TSharedPtr<SButton> button);
 
-	void AddWidget(FInputFrameStack* inputFrameStack, int32 frameIndex);
+	void AddInputFrameWidget(int32 frameIndex);
 
 protected:
 

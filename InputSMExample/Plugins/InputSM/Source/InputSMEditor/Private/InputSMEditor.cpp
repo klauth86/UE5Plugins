@@ -93,73 +93,73 @@ void FInputSMEditor::SaveAsset_Execute()
 {
 	TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin();
 	
-	if (graphEditor.IsValid())
-	{
-		UEdGraph* graph = graphEditor->GetCurrentGraph();
+	//if (graphEditor.IsValid())
+	//{
+	//	UEdGraph* graph = graphEditor->GetCurrentGraph();
 
-		UInputSMGraphNode_Entry* GraphNodeEntry = nullptr;
+	//	UInputSMGraphNode_Entry* GraphNodeEntry = nullptr;
 
-		TArray<UInputSMGraphNode_Transition*> Transitions;
+	//	TArray<UInputSMGraphNode_Transition*> Transitions;
 
-		TMap<UInputSMGraphNode_State* , int32> StatesMap;
+	//	TMap<UInputSMGraphNode_State* , int32> StatesMap;
 
-		for (UEdGraphNode* graphNode : graph->Nodes)
-		{
-			if (UInputSMGraphNode_Entry* graphNodeEntry = Cast<UInputSMGraphNode_Entry>(graphNode))
-			{
-				GraphNodeEntry = graphNodeEntry;
-			}
-			else if (UInputSMGraphNode_Transition* graphNodeTransition = Cast<UInputSMGraphNode_Transition>(graphNode))
-			{
-				Transitions.Add(graphNodeTransition);
-			}
-			else if (UInputSMGraphNode_State* graphNodeState = Cast<UInputSMGraphNode_State>(graphNode))
-			{
-				StatesMap.Add(graphNodeState, INDEX_NONE);
-			}
-		}
+	//	for (UEdGraphNode* graphNode : graph->Nodes)
+	//	{
+	//		if (UInputSMGraphNode_Entry* graphNodeEntry = Cast<UInputSMGraphNode_Entry>(graphNode))
+	//		{
+	//			GraphNodeEntry = graphNodeEntry;
+	//		}
+	//		else if (UInputSMGraphNode_Transition* graphNodeTransition = Cast<UInputSMGraphNode_Transition>(graphNode))
+	//		{
+	//			Transitions.Add(graphNodeTransition);
+	//		}
+	//		else if (UInputSMGraphNode_State* graphNodeState = Cast<UInputSMGraphNode_State>(graphNode))
+	//		{
+	//			StatesMap.Add(graphNodeState, INDEX_NONE);
+	//		}
+	//	}
 
-		UInputSM* inputSm = graph->GetTypedOuter<UInputSM>();
+	//	UInputSM* inputSm = graph->GetTypedOuter<UInputSM>();
 
-		inputSm->Reset(0); // Clear all
+	//	inputSm->Reset(0); // Clear all
 
-		if (GraphNodeEntry)
-		{
-			UInputSMGraphNode_State* firstState = GraphNodeEntry->GetOutputPin()->LinkedTo.Num() > 0
-				? Cast<UInputSMGraphNode_State>(GraphNodeEntry->GetOutputPin()->LinkedTo[0]->GetOwningNode())
-				: nullptr;
+	//	if (GraphNodeEntry)
+	//	{
+	//		UInputSMGraphNode_State* firstState = GraphNodeEntry->GetOutputPin()->LinkedTo.Num() > 0
+	//			? Cast<UInputSMGraphNode_State>(GraphNodeEntry->GetOutputPin()->LinkedTo[0]->GetOwningNode())
+	//			: nullptr;
 
-			if (firstState)
-			{
-				////// TODO We can analyse graph before and through out unaccessible parts
-				////// At the moment use simple and primary mapping
+	//		if (firstState)
+	//		{
+	//			////// TODO We can analyse graph before and through out unaccessible parts
+	//			////// At the moment use simple and primary mapping
 
-				for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
-				{
-					int32 emplacedIndex = inputSm->GetStates().Emplace();
-					inputSm->GetStates()[emplacedIndex].StateName = statesMapEntry.Key->GetStateName();
-					inputSm->GetStates()[emplacedIndex].StateAsset = statesMapEntry.Key->GetStateAsset();
-					
-					statesMapEntry.Value = emplacedIndex;
-				}
+	//			for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
+	//			{
+	//				int32 emplacedIndex = inputSm->GetStates().Emplace();
+	//				inputSm->GetStates()[emplacedIndex].StateName = statesMapEntry.Key->GetStateName();
+	//				inputSm->GetStates()[emplacedIndex].StateAsset = statesMapEntry.Key->GetStateAsset();
+	//				
+	//				statesMapEntry.Value = emplacedIndex;
+	//			}
 
-				inputSm->SetStartStateIndex(StatesMap[firstState]);
+	//			inputSm->SetStartStateIndex(StatesMap[firstState]);
 
-				for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
-				{
-					TArray<UInputSMGraphNode_Transition*> transitions;
-					statesMapEntry.Key->GetTransitionList(transitions, true);
+	//			for (TPair<UInputSMGraphNode_State*, int32>& statesMapEntry : StatesMap)
+	//			{
+	//				TArray<UInputSMGraphNode_Transition*> transitions;
+	//				statesMapEntry.Key->GetTransitionList(transitions, true);
 
-					for (UInputSMGraphNode_Transition* transition : transitions)
-					{
-						int32 emplacedIndex = inputSm->GetStates()[statesMapEntry.Value].Transitions.Emplace();
-						inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].TargetIndex = StatesMap[transition->GetNextState()];
-						inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].ActivationStack = transition->ActivationStack;
-					}
-				}
-			}
-		}
-	}
+	//				for (UInputSMGraphNode_Transition* transition : transitions)
+	//				{
+	//					int32 emplacedIndex = inputSm->GetStates()[statesMapEntry.Value].Transitions.Emplace();
+	//					inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].TargetIndex = StatesMap[transition->GetNextState()];
+	//					inputSm->GetStates()[statesMapEntry.Value].Transitions[emplacedIndex].ActivationStack = transition->ActivationStack;
+	//				}
+	//			}
+	//		}
+	//	}
+	//}
 
 	FAssetEditorToolkit::SaveAsset_Execute();
 }
@@ -202,7 +202,7 @@ TSharedRef<SDockTab> FInputSMEditor::SpawnTab_Graph(const FSpawnTabArgs& Args)
 		const UEdGraphSchema* Schema = InputSM->EdGraph->GetSchema();
 		Schema->CreateDefaultNodesForGraph(*InputSM->EdGraph);
 
-		SaveAsset_Execute();
+		//SaveAsset_Execute();
 	}
 
 	check(InputSM->EdGraph != NULL);
