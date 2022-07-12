@@ -19,6 +19,11 @@
 			"Name": "InputSequence",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "InputSequenceEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
 		}
 	]
 }

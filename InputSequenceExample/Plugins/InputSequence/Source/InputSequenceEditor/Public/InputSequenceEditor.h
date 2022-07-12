@@ -4,7 +4,7 @@
 
 #include "Modules/ModuleManager.h"
 
-class FInputSequenceModule : public IModuleInterface
+class FInputSequenceEditorModule : public IModuleInterface
 {
 public:
 	virtual void StartupModule() override;

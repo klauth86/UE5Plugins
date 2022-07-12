@@ -2,9 +2,9 @@
 
 using UnrealBuildTool;
 
-public class InputSequence : ModuleRules
+public class InputSequenceEditor : ModuleRules
 {
-	public InputSequence(ReadOnlyTargetRules Target) : base(Target)
+	public InputSequenceEditor(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
