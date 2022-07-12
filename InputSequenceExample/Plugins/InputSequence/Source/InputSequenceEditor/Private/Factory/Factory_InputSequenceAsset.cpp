@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Factory/Factory_InputSequenceAsset.h"
+#include "AssetTypeCategories.h"
 #include "InputSequenceAsset.h"
 
 UFactory_InputSequenceAsset::UFactory_InputSequenceAsset(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
