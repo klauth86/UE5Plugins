@@ -9,4 +9,8 @@ UCLASS()
 class UInputSequenceGraphSchema : public UEdGraphSchema
 {
 	GENERATED_BODY()
+
+public:
+
+	virtual void CreateDefaultNodesForGraph(UEdGraph& Graph) const override;
 };

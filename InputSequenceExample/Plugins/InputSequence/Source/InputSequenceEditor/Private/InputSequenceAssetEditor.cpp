@@ -31,6 +31,7 @@ void FInputSequenceAssetEditor::InitAssetEditor(const EToolkitMode::Type Mode, c
 			(
 				FTabManager::NewStack()
 				->AddTab(GraphTabId, ETabState::OpenedTab)
+				->SetHideTabWell(true)
 			)
 		);
 
@@ -39,13 +40,13 @@ void FInputSequenceAssetEditor::InitAssetEditor(const EToolkitMode::Type Mode, c
 
 void FInputSequenceAssetEditor::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
 {
-	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenuCategory", "Input Sequence Editor"));
+	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenuCategory", "Input Sequence Asset Editor"));
 	TSharedRef<FWorkspaceItem> WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
 
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
 	InTabManager->RegisterTabSpawner(GraphTabId, FOnSpawnTab::CreateSP(this, &FInputSequenceAssetEditor::SpawnTab_GraphTab))
-		.SetDisplayName(LOCTEXT("FInputSequenceAssetEditor_GraphTab_DisplayName", "Graph"))
+		.SetDisplayName(LOCTEXT("GraphTab_DisplayName", "Graph"))
 		.SetGroup(WorkspaceMenuCategoryRef)
 		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "GraphEditor.EventGraph_16x"));
 }
@@ -66,38 +67,24 @@ TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTa
 	if (InputSequenceAsset->EdGraph == NULL)
 	{
 		InputSequenceAsset->EdGraph = NewObject<UInputSequenceGraph>(InputSequenceAsset, NAME_None, RF_Transactional);
+		InputSequenceAsset->EdGraph->GetSchema()->CreateDefaultNodesForGraph(*InputSequenceAsset->EdGraph);
 	}
 
 	check(InputSequenceAsset->EdGraph != NULL);
 
 	FGraphAppearanceInfo AppearanceInfo;
-	AppearanceInfo.CornerText = LOCTEXT("FInputSequenceAssetEditor_GraphTab_AppearanceInfo_CornerText", "Input Sequence Asset");
+	AppearanceInfo.CornerText = LOCTEXT("GraphTab_AppearanceInfo_CornerText", "Input Sequence Asset");
 
 	CreateCommandList();
 
-	TSharedRef<SWidget> TitleBarWidget =
-		SNew(SBorder).BorderImage(FEditorStyle::GetBrush(TEXT("Graph.TitleBackground")))
-		.HAlign(HAlign_Fill)
-		[
-			SNew(SHorizontalBox)
-			+ SHorizontalBox::Slot()
-			.HAlign(HAlign_Center)
-			.FillWidth(1.f)
-			[
-				SNew(STextBlock)
-				.Text(LOCTEXT("TheQueryGraphLabel", "Input State Machine Graph"))
-				.TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText"))
-			]
-		];
-
 	return SNew(SDockTab)
-		.Label(LOCTEXT("UpdateGraph", "Update Graph"))
+		.Label(LOCTEXT("GraphTab_Label", "Graph"))
 		.TabColorScale(GetTabColorScale())
 		[
 			SAssignNew(GraphEditorPtr, SGraphEditor)
 			.AdditionalCommands(GraphEditorCommands)
 			.Appearance(AppearanceInfo)
-			.TitleBar(TitleBarWidget)
+			.TitleBar(SNew(STextBlock).Text(LOCTEXT("GraphTab_Title", "Input Sequence Asset")).TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText")))
 			.GraphToEdit(InputSequenceAsset->EdGraph)
 		];
 }
