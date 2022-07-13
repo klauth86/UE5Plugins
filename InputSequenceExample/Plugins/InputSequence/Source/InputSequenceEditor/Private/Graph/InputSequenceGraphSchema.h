@@ -43,6 +43,8 @@ public:
 
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 
+	virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* pinA, const UEdGraphPin* pinB) const override;
+
 	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override { return FLinearColor::White; }
 
 	virtual void CreateDefaultNodesForGraph(UEdGraph& Graph) const override;

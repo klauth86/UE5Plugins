@@ -12,5 +12,11 @@ class UInputSequenceGraphNode_State : public UEdGraphNode
 
 public:
 
+	UEdGraphPin* GetInputPin() const;
+
+	UEdGraphPin* GetOutputPin() const;
+
 	virtual void AllocateDefaultPins() override;
+
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
 };

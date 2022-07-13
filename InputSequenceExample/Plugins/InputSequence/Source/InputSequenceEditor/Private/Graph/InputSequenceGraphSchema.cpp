@@ -104,6 +104,19 @@ void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder&
 	AddNewActionIfHasNo<UInputSequenceGraphNode_Finish>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Finish", "Add Finish Node..."), LOCTEXT("AddNode_Finish_Tooltip", "Define Finish Node"));
 }
 
+const FPinConnectionResponse UInputSequenceGraphSchema::CanCreateConnection(const UEdGraphPin* pinA, const UEdGraphPin* pinB) const
+{
+	if (pinA == nullptr || pinB == nullptr) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("Pin(s)Null", "One or Both of the pins was null"));
+
+	if (pinA->GetOwningNode() == pinB->GetOwningNode()) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsOfSameNode", "Both pins are on the same node"));
+
+	if (pinA->Direction == pinB->Direction) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsOfSameDirection", "Both pins have same direction (both input or both output)"));
+
+	if (pinA->PinName != pinB->PinName) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsMismatched", "The pin types are mismatched (Flow pins should be connected to Flow pins, Key pins - to Key pins)"));
+
+	return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_AB, TEXT(""));
+}
+
 void UInputSequenceGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	FGraphNodeCreator<UInputSequenceGraphNode_Start> startNodeCreator(Graph);
@@ -129,10 +142,28 @@ void UInputSequenceGraphNode_Finish::AllocateDefaultPins()
 	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 }
 
+UEdGraphPin* UInputSequenceGraphNode_State::GetInputPin() const { return Pins.IsValidIndex(0) ? Pins[0] : nullptr; }
+
+UEdGraphPin* UInputSequenceGraphNode_State::GetOutputPin() const { return Pins.IsValidIndex(1) ? Pins[1] : nullptr; }
+
 void UInputSequenceGraphNode_State::AllocateDefaultPins()
 {
 	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+	
 	UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+}
+
+void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
+{
+	if (FromPin)
+	{
+		// Flow
+		if (FromPin->Direction == EGPD_Output && GetSchema()->TryCreateConnection(FromPin, GetInputPin()) ||
+			FromPin->Direction == EGPD_Input && GetSchema()->TryCreateConnection(FromPin, GetOutputPin()))
+		{
+			FromPin->GetOwningNode()->NodeConnectionListChanged();
+		}
+	}
 }
 
 #undef LOCTEXT_NAMESPACE
