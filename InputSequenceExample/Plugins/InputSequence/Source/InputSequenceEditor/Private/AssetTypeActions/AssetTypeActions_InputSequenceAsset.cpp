@@ -16,7 +16,7 @@ void FAssetTypeActions_InputSequenceAsset::OpenAssetEditor(const TArray<UObject*
 		if (UInputSequenceAsset* inputSequenceAsset = Cast<UInputSequenceAsset>(*ObjIt))
 		{
 			TSharedRef<FInputSequenceAssetEditor> NewEditor(new FInputSequenceAssetEditor());
-			NewEditor->InitEditor(Mode, EditWithinLevelEditor, inputSequenceAsset);
+			NewEditor->InitAssetEditor(Mode, EditWithinLevelEditor, inputSequenceAsset);
 		}
 	}
 }

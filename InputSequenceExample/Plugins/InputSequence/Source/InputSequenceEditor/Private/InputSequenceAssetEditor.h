@@ -12,8 +12,12 @@ class FInputSequenceAssetEditor : public FEditorUndoClient, public FAssetEditorT
 public:
 
 	static const FName AppIdentifier;
+	static const FName GraphTabId;
 
-	void InitEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSequenceAsset* inputSequenceAsset);
+	void InitAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSequenceAsset* inputSequenceAsset);
+
+	virtual void RegisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
+	virtual void UnregisterTabSpawners(const TSharedRef<FTabManager>& TabManager) override;
 
 	virtual FLinearColor GetWorldCentricTabColorScale() const override { return FLinearColor::White; }
 
@@ -23,5 +27,15 @@ public:
 
 protected:
 
+	TSharedRef<SDockTab> SpawnTab_GraphTab(const FSpawnTabArgs& Args);
+
+	void CreateCommandList();
+
+protected:
+
 	UInputSequenceAsset* InputSequenceAsset;
+
+	TSharedPtr<FUICommandList> GraphEditorCommands;
+
+	TWeakPtr<SGraphEditor> GraphEditorPtr;
 };
