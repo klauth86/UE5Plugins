@@ -7,6 +7,7 @@
 #define LOCTEXT_NAMESPACE "FInputSequenceAssetEditor"
 
 const FName FInputSequenceAssetEditor::AppIdentifier(TEXT("FInputSequenceAssetEditor_AppIdentifier"));
+const FName FInputSequenceAssetEditor::DetailsTabId(TEXT("FInputSequenceAssetEditor_DetailsTab_Id"));
 const FName FInputSequenceAssetEditor::GraphTabId(TEXT("FInputSequenceAssetEditor_GraphTab_Id"));
 
 void FInputSequenceAssetEditor::InitAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSequenceAsset* inputSequenceAsset)
@@ -29,9 +30,21 @@ void FInputSequenceAssetEditor::InitAssetEditor(const EToolkitMode::Type Mode, c
 			)
 			->Split
 			(
-				FTabManager::NewStack()
-				->AddTab(GraphTabId, ETabState::OpenedTab)
-				->SetHideTabWell(true)
+				FTabManager::NewSplitter()->SetOrientation(Orient_Horizontal)
+				->Split
+				(
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.3f)
+					->AddTab(DetailsTabId, ETabState::OpenedTab)
+					->SetHideTabWell(true)
+				)
+				->Split
+				(
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.7f)
+					->AddTab(GraphTabId, ETabState::OpenedTab)
+					->SetHideTabWell(true)
+				)
 			)
 		);
 
@@ -45,6 +58,11 @@ void FInputSequenceAssetEditor::RegisterTabSpawners(const TSharedRef<class FTabM
 
 	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
 
+	InTabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &FInputSequenceAssetEditor::SpawnTab_DetailsTab))
+		.SetDisplayName(LOCTEXT("DetailsTab_DisplayName", "Details"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+
 	InTabManager->RegisterTabSpawner(GraphTabId, FOnSpawnTab::CreateSP(this, &FInputSequenceAssetEditor::SpawnTab_GraphTab))
 		.SetDisplayName(LOCTEXT("GraphTab_DisplayName", "Graph"))
 		.SetGroup(WorkspaceMenuCategoryRef)
@@ -56,13 +74,33 @@ void FInputSequenceAssetEditor::UnregisterTabSpawners(const TSharedRef<class FTa
 	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
 
 	InTabManager->UnregisterTabSpawner(GraphTabId);
+	InTabManager->UnregisterTabSpawner(DetailsTabId);
+}
+
+TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_DetailsTab(const FSpawnTabArgs& Args)
+{
+	check(Args.GetTabId() == DetailsTabId);
+
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+	FDetailsViewArgs DetailsViewArgs = FDetailsViewArgs();
+	DetailsViewArgs.bUpdatesFromSelection = false;
+	DetailsViewArgs.bLockable = false;
+	DetailsViewArgs.bAllowSearch = false;
+	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+	DetailsViewArgs.bHideSelectionTip = true;
+
+	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+	DetailsView->SetObject(NULL);
+
+	return SNew(SDockTab).Label(LOCTEXT("DetailsTab_Label", "Details"))[DetailsView.ToSharedRef()];
 }
 
 TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTabArgs& Args)
 {
-	check(InputSequenceAsset != NULL);
-
 	check(Args.GetTabId().TabType == GraphTabId);
+
+	check(InputSequenceAsset != NULL);
 
 	if (InputSequenceAsset->EdGraph == NULL)
 	{
@@ -75,6 +113,9 @@ TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTa
 	FGraphAppearanceInfo AppearanceInfo;
 	AppearanceInfo.CornerText = LOCTEXT("GraphTab_AppearanceInfo_CornerText", "Input Sequence Asset");
 
+	SGraphEditor::FGraphEditorEvents InEvents;
+	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSequenceAssetEditor::OnSelectionChanged);
+
 	CreateCommandList();
 
 	return SNew(SDockTab)
@@ -84,6 +125,7 @@ TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTa
 			SAssignNew(GraphEditorPtr, SGraphEditor)
 			.AdditionalCommands(GraphEditorCommands)
 			.Appearance(AppearanceInfo)
+			.GraphEvents(InEvents)
 			.TitleBar(SNew(STextBlock).Text(LOCTEXT("GraphTab_Title", "Input Sequence Asset")).TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText")))
 			.GraphToEdit(InputSequenceAsset->EdGraph)
 		];
@@ -94,6 +136,11 @@ void FInputSequenceAssetEditor::CreateCommandList()
 	if (GraphEditorCommands.IsValid()) return;
 
 	GraphEditorCommands = MakeShareable(new FUICommandList);
+}
+
+void FInputSequenceAssetEditor::OnSelectionChanged(const TSet<UObject*>& selectedNodes)
+{
+	return selectedNodes.Num() == 1 ? DetailsView->SetObject(*selectedNodes.begin()) : DetailsView->SetObject(NULL);
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -6,12 +6,14 @@
 #include "Toolkits/AssetEditorToolkit.h"
 
 class UInputSequenceAsset;
+class IDetailsView;
 
 class FInputSequenceAssetEditor : public FEditorUndoClient, public FAssetEditorToolkit
 {
 public:
 
 	static const FName AppIdentifier;
+	static const FName DetailsTabId;
 	static const FName GraphTabId;
 
 	void InitAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSequenceAsset* inputSequenceAsset);
@@ -27,9 +29,12 @@ public:
 
 protected:
 
+	TSharedRef<SDockTab> SpawnTab_DetailsTab(const FSpawnTabArgs& Args);
 	TSharedRef<SDockTab> SpawnTab_GraphTab(const FSpawnTabArgs& Args);
 
 	void CreateCommandList();
+
+	void OnSelectionChanged(const TSet<UObject*>& selectedNodes);
 
 protected:
 
@@ -38,4 +43,6 @@ protected:
 	TSharedPtr<FUICommandList> GraphEditorCommands;
 
 	TWeakPtr<SGraphEditor> GraphEditorPtr;
+
+	TSharedPtr<IDetailsView> DetailsView;
 };
