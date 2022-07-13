@@ -4,8 +4,75 @@
 #include "Graph/InputSequenceGraph.h"
 #include "Graph/InputSequenceGraphNode_Start.h"
 #include "Graph/InputSequenceGraphNode_Finish.h"
+#include "Graph/InputSequenceGraphNode_State.h"
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
+#include "Classes/EditorStyleSettings.h"
+
+#define LOCTEXT_NAMESPACE "UInputSequenceGraphSchema"
+
+template<class T>
+TSharedPtr<T> AddNewActionAs(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
+{
+	TSharedPtr<T> NewStateNode(new T(Category, MenuDesc, Tooltip, Grouping));
+	ContextMenuBuilder.AddAction(NewStateNode);
+	return NewStateNode;
+}
+
+template<class T>
+void AddNewActionIfHasNo(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
+{
+	for (auto NodeIt = ContextMenuBuilder.CurrentGraph->Nodes.CreateConstIterator(); NodeIt; ++NodeIt)
+	{
+		UEdGraphNode* Node = *NodeIt;
+		if (const T* StateNode = Cast<T>(Node)) return;
+	}
+
+	TSharedPtr<FInputSequenceGraphSchemaAction_NewNode> Action = AddNewActionAs<FInputSequenceGraphSchemaAction_NewNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Finish", "Add Finish Node..."), LOCTEXT("AddNode_Finish_Tooltip", "Define Finish Node"));
+	Action->NodeTemplate = NewObject<T>(ContextMenuBuilder.OwnerOfTemporaries);
+}
+
+UEdGraphNode* FInputSequenceGraphSchemaAction_NewNode::PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode)
+{
+	UEdGraphNode* ResultNode = NULL;
+
+	// If there is a template, we actually use it
+	if (NodeTemplate != NULL)
+	{
+		const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddNode", "Add Node"));
+		ParentGraph->Modify();
+		if (FromPin)
+		{
+			FromPin->Modify();
+		}
+
+		// set outer to be the graph so it doesn't go away
+		NodeTemplate->Rename(NULL, ParentGraph);
+		ParentGraph->AddNode(NodeTemplate, true, bSelectNewNode);
+
+		NodeTemplate->CreateNewGuid();
+		NodeTemplate->PostPlacedNewNode();
+		NodeTemplate->AllocateDefaultPins();
+		NodeTemplate->AutowireNewNode(FromPin);
+
+		NodeTemplate->NodePosX = Location.X;
+		NodeTemplate->NodePosY = Location.Y;
+		NodeTemplate->SnapToGrid(GetDefault<UEditorStyleSettings>()->GridSnapSize);
+
+		ResultNode = NodeTemplate;
+
+		ResultNode->SetFlags(RF_Transactional);
+	}
+
+	return ResultNode;
+}
+
+void FInputSequenceGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCollector& Collector)
+{
+	FEdGraphSchemaAction::AddReferencedObjects(Collector);
+
+	Collector.AddReferencedObject(NodeTemplate);
+}
 
 TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPin) const
 {
@@ -23,6 +90,19 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 }
 
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
+
+void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
+{
+	// Add state node
+	TSharedPtr<FInputSequenceGraphSchemaAction_NewNode> Action = AddNewActionAs<FInputSequenceGraphSchemaAction_NewNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_State", "Add State Node..."), LOCTEXT("AddNode_State_Tooltip", "A new State Node"));
+	Action->NodeTemplate = NewObject<UInputSequenceGraphNode_State>(ContextMenuBuilder.OwnerOfTemporaries);
+
+	// Add Start node if absent
+	AddNewActionIfHasNo<UInputSequenceGraphNode_Start>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Start", "Add Start Node..."), LOCTEXT("AddNode_Start_Tooltip", "Define Start Node"));
+
+	// Add Finish node if absent
+	AddNewActionIfHasNo<UInputSequenceGraphNode_Finish>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Finish", "Add Finish Node..."), LOCTEXT("AddNode_Finish_Tooltip", "Define Finish Node"));
+}
 
 void UInputSequenceGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
@@ -48,3 +128,11 @@ void UInputSequenceGraphNode_Finish::AllocateDefaultPins()
 {
 	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 }
+
+void UInputSequenceGraphNode_State::AllocateDefaultPins()
+{
+	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+	UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+}
+
+#undef LOCTEXT_NAMESPACE
