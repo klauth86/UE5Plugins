@@ -5,6 +5,19 @@
 #include "EdGraph/EdGraphNode.h"
 #include "InputSequenceGraphNode_State.generated.h"
 
+enum EInputEvent;
+
+USTRUCT()
+struct FInputFrame
+{
+	GENERATED_USTRUCT_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere)
+		TMap<FName, TEnumAsByte<EInputEvent>> ActionsFrame;
+};
+
 UCLASS()
 class UInputSequenceGraphNode_State : public UEdGraphNode
 {
@@ -19,4 +32,9 @@ public:
 	virtual void AllocateDefaultPins() override;
 
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+
+protected:
+
+	UPROPERTY(EditAnywhere)
+		FInputFrame InputFrame;
 };

@@ -12,8 +12,12 @@ public:
 	virtual void StartupModule() override;
 	virtual void ShutdownModule() override;
 
-private:
-	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
+protected:
 
+	void RegisterCustomPropertyTypeLayout(FName ClassName, FOnGetPropertyTypeCustomizationInstance DetailLayoutDelegate);
+
+private:
+	TArray<FName> RegisteredPTNames;
+	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
 	TSharedPtr<FInputSequenceGraphPinFactory> InputSequenceGraphPinFactory;
 };
