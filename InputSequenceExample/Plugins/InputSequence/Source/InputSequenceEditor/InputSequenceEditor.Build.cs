@@ -34,7 +34,8 @@ public class InputSequenceEditor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"CoreUObject", "InputSequence", "UnrealEd", "AssetTools", "SlateCore", "Slate", "EditorStyle", "Engine"
+				"CoreUObject", "InputSequence", "UnrealEd", "AssetTools", "SlateCore", "Slate", "EditorStyle", "Engine",
+				"GraphEditor"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

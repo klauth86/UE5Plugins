@@ -14,4 +14,6 @@ public:
 
 private:
 	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
+
+	TSharedPtr<FInputSequenceGraphPinFactory> InputSequenceGraphPinFactory;
 };

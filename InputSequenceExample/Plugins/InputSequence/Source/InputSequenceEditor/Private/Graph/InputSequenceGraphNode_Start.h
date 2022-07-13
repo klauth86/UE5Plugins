@@ -12,6 +12,8 @@ class UInputSequenceGraphNode_Start : public UEdGraphNode
 
 public:
 
+	virtual void AllocateDefaultPins() override;
+
 	virtual bool CanDuplicateNode() const override { return false; }
 
 	virtual bool CanUserDeleteNode() const override { return false; }

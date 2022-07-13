@@ -12,5 +12,9 @@ class UInputSequenceGraphSchema : public UEdGraphSchema
 
 public:
 
+	static const FName PC_Exec;
+
+	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override { return FLinearColor::White; }
+
 	virtual void CreateDefaultNodesForGraph(UEdGraph& Graph) const override;
 };

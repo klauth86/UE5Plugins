@@ -3,6 +3,7 @@
 #include "InputSequenceEditor.h"
 #include "AssetToolsModule.h"
 #include "AssetTypeActions/AssetTypeActions_InputSequenceAsset.h"
+#include "Graph/InputSequenceGraphFactories.h"
 
 #define LOCTEXT_NAMESPACE "FInputSequenceEditorModule"
 
@@ -20,10 +21,16 @@ void FInputSequenceEditorModule::StartupModule()
 			AssetTools.RegisterAssetTypeActions(registeredAssetTypeAction.ToSharedRef());
 		}
 	}
+
+	InputSequenceGraphPinFactory = MakeShareable(new FInputSequenceGraphPinFactory());
+	FEdGraphUtilities::RegisterVisualPinFactory(InputSequenceGraphPinFactory);
 }
 
 void FInputSequenceEditorModule::ShutdownModule()
 {
+	FEdGraphUtilities::UnregisterVisualPinFactory(InputSequenceGraphPinFactory);
+	InputSequenceGraphPinFactory.Reset();
+
 	if (FModuleManager::Get().IsModuleLoaded(AssetToolsModuleName))
 	{
 		IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>(AssetToolsModuleName).Get();
