@@ -33,6 +33,10 @@ public:
 
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
 
+	void CascadeAddActionChange(const FName& action);
+
+	void CascadeRemoveActionChange(const FName& action);
+
 protected:
 
 	UPROPERTY(EditAnywhere)

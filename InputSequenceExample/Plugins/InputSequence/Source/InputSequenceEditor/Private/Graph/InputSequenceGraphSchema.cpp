@@ -166,4 +166,14 @@ void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
 	}
 }
 
+void UInputSequenceGraphNode_State::CascadeAddActionChange(const FName& action)
+{
+
+}
+
+void UInputSequenceGraphNode_State::CascadeRemoveActionChange(const FName& action)
+{
+
+}
+
 #undef LOCTEXT_NAMESPACE
