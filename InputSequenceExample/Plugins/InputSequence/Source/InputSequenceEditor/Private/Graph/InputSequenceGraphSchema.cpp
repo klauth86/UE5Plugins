@@ -8,6 +8,7 @@
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
 #include "Classes/EditorStyleSettings.h"
+#include "GameFramework/InputSettings.h"
 
 #define LOCTEXT_NAMESPACE "UInputSequenceGraphSchema"
 
@@ -81,7 +82,7 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 		return SNew(SGraphPinExec, InPin);
 	}
 
-	return nullptr;
+	return SNew(SGraphPin, InPin);
 }
 
 UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
@@ -90,6 +91,8 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 }
 
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
+
+const FName UInputSequenceGraphSchema::PC_InputAction = FName("UInputSequenceGraphSchema_PC_InputAction");
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -142,38 +145,103 @@ void UInputSequenceGraphNode_Finish::AllocateDefaultPins()
 	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 }
 
-UEdGraphPin* UInputSequenceGraphNode_State::GetInputPin() const { return Pins.IsValidIndex(0) ? Pins[0] : nullptr; }
-
-UEdGraphPin* UInputSequenceGraphNode_State::GetOutputPin() const { return Pins.IsValidIndex(1) ? Pins[1] : nullptr; }
-
 void UInputSequenceGraphNode_State::AllocateDefaultPins()
 {
 	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-	
 	UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+
+	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
+	for (const FInputActionKeyMapping& actionMapping : actionMappings)
+	{
+		CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+		CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+	}
+}
+
+void UInputSequenceGraphNode_State::ReconstructNode()
+{
+	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
+
+	TArray<UEdGraphPin*> pinsToRemove;
+	for (UEdGraphPin* pin : Pins)
+	{
+		FName pinName = pin->PinName;
+		if (pinName != NAME_None &&
+			!actionMappings.ContainsByPredicate([pinName](const FInputActionKeyMapping& actionMapping) { return actionMapping.ActionName == pinName; }))
+		{
+			pinsToRemove.Add(pin);
+		}
+	}
+
+	const int32 flowPinsNum = 2;
+	
+	const int32 oldInputActionPinsCount = (Pins.Num() - flowPinsNum) / 2;
+
+	for (UEdGraphPin* pin : pinsToRemove)
+	{
+		for (size_t i = 0; i < pin->LinkedTo.Num(); i++)
+		{
+			pin->LinkedTo[i]->LinkedTo.Remove(pin);
+		}
+
+		RemovePin(pin);
+	}
+
+	FCreatePinParams params = FCreatePinParams();
+
+	for (size_t i = 0; i < actionMappings.Num(); i++)
+	{
+		const FInputActionKeyMapping& actionMapping = actionMappings[i];
+		if (!FindPin(actionMapping.ActionName))
+		{
+			params.Index++;
+			CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+
+			params.Index++;
+			CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+		}
+	}
+
+	if (pinsToRemove.Num() > 0 || params.Index >= 0) Modify();
 }
 
 void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
 {
 	if (FromPin)
 	{
-		// Flow
-		if (FromPin->Direction == EGPD_Output && GetSchema()->TryCreateConnection(FromPin, GetInputPin()) ||
-			FromPin->Direction == EGPD_Input && GetSchema()->TryCreateConnection(FromPin, GetOutputPin()))
+		if (FromPin->Direction == EGPD_Output)
 		{
-			FromPin->GetOwningNode()->NodeConnectionListChanged();
+			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Input))
+			{
+				bool connectionCreated = GetSchema()->TryCreateConnection(FromPin, OtherPin);
+
+				if (FromPin->PinName != NAME_None) // Connect flow pins if before we connected input action pins
+				{
+					UEdGraphPin* FromFlowPin = FromPin->GetOwningNode()->FindPin(NAME_None, EGPD_Output);
+					UEdGraphPin* OtherFlowPin = FindPin(NAME_None, EGPD_Input);
+					connectionCreated |= GetSchema()->TryCreateConnection(FromFlowPin, OtherFlowPin);
+				}
+
+				if (connectionCreated) FromPin->GetOwningNode()->NodeConnectionListChanged();
+			}
+		}
+		else if (FromPin->Direction == EGPD_Input)
+		{
+			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Output))
+			{
+				bool connectionCreated = GetSchema()->TryCreateConnection(FromPin, OtherPin);
+
+				if (FromPin->PinName != NAME_None) // Connect flow pins if before we connected input action pins
+				{
+					UEdGraphPin* FromFlowPin = FromPin->GetOwningNode()->FindPin(NAME_None, EGPD_Input);
+					UEdGraphPin* OtherFlowPin = FindPin(NAME_None, EGPD_Output);
+					connectionCreated |= GetSchema()->TryCreateConnection(FromFlowPin, OtherFlowPin);
+				}
+
+				if (connectionCreated) FromPin->GetOwningNode()->NodeConnectionListChanged();
+			}
 		}
 	}
-}
-
-void UInputSequenceGraphNode_State::CascadeAddActionChange(const FName& action)
-{
-
-}
-
-void UInputSequenceGraphNode_State::CascadeRemoveActionChange(const FName& action)
-{
-
 }
 
 #undef LOCTEXT_NAMESPACE

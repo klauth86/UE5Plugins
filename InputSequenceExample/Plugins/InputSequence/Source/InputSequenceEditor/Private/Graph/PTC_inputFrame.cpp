@@ -72,7 +72,6 @@ FReply FPTC_InputFrame::AddRemoveButtonOnClicked(FName actionName) const
 			if (UInputSequenceGraphNode_State* stateNode = GetTypedFirstOuter<UInputSequenceGraphNode_State>(InternalPropertyHandle))
 			{
 				stateNode->Modify();
-				stateNode->CascadeRemoveActionChange(actionName);
 			}
 		}
 		else
@@ -82,7 +81,6 @@ FReply FPTC_InputFrame::AddRemoveButtonOnClicked(FName actionName) const
 			if (UInputSequenceGraphNode_State* stateNode = GetTypedFirstOuter<UInputSequenceGraphNode_State>(InternalPropertyHandle))
 			{
 				stateNode->Modify();
-				stateNode->CascadeAddActionChange(actionName);
 			}
 		}
 	}

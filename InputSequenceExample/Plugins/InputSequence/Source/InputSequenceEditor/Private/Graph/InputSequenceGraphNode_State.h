@@ -25,17 +25,11 @@ class UInputSequenceGraphNode_State : public UEdGraphNode
 
 public:
 
-	UEdGraphPin* GetInputPin() const;
-
-	UEdGraphPin* GetOutputPin() const;
-
 	virtual void AllocateDefaultPins() override;
 
+	virtual void ReconstructNode() override;
+
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
-
-	void CascadeAddActionChange(const FName& action);
-
-	void CascadeRemoveActionChange(const FName& action);
 
 protected:
 

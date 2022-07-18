@@ -110,6 +110,8 @@ TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTa
 
 	check(InputSequenceAsset->EdGraph != NULL);
 
+	InputSequenceAsset->EdGraph->GetSchema()->ReconstructNode(*InputSequenceAsset->EdGraph->Nodes[3].Get(), false);
+
 	FGraphAppearanceInfo AppearanceInfo;
 	AppearanceInfo.CornerText = LOCTEXT("GraphTab_AppearanceInfo_CornerText", "Input Sequence Asset");
 
