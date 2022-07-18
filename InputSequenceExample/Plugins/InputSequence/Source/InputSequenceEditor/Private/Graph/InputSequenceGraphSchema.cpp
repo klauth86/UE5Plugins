@@ -15,9 +15,9 @@
 template<class T>
 TSharedPtr<T> AddNewActionAs(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
 {
-	TSharedPtr<T> NewStateNode(new T(Category, MenuDesc, Tooltip, Grouping));
-	ContextMenuBuilder.AddAction(NewStateNode);
-	return NewStateNode;
+	TSharedPtr<T> newNode(new T(Category, MenuDesc, Tooltip, Grouping));
+	ContextMenuBuilder.AddAction(newNode);
+	return newNode;
 }
 
 template<class T>
@@ -26,7 +26,7 @@ void AddNewActionIfHasNo(FGraphContextMenuBuilder& ContextMenuBuilder, const FTe
 	for (auto NodeIt = ContextMenuBuilder.CurrentGraph->Nodes.CreateConstIterator(); NodeIt; ++NodeIt)
 	{
 		UEdGraphNode* Node = *NodeIt;
-		if (const T* StateNode = Cast<T>(Node)) return;
+		if (const T* castedNode = Cast<T>(Node)) return;
 	}
 
 	TSharedPtr<FInputSequenceGraphSchemaAction_NewNode> Action = AddNewActionAs<FInputSequenceGraphSchemaAction_NewNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Finish", "Add Finish Node..."), LOCTEXT("AddNode_Finish_Tooltip", "Define Finish Node"));
@@ -147,14 +147,16 @@ void UInputSequenceGraphNode_Finish::AllocateDefaultPins()
 
 void UInputSequenceGraphNode_State::AllocateDefaultPins()
 {
-	UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-	UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 
 	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
 	for (const FInputActionKeyMapping& actionMapping : actionMappings)
 	{
-		CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
-		CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+		UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+		InputPin->bHidden = true;
+
+		UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
 	}
 }
 
@@ -237,6 +239,30 @@ void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
 				}
 
 				if (connectionCreated) FromPin->GetOwningNode()->NodeConnectionListChanged();
+			}
+		}
+	}
+}
+
+void UInputSequenceGraphNode_State::NodeConnectionListChanged()
+{
+	if (UEdGraphPin* flowInputPin = FindPin(NAME_None, EGPD_Input))
+	{
+		if (flowInputPin->LinkedTo.Num() > 0)
+		{
+			if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(flowInputPin->LinkedTo[0]->GetOwningNode()))
+			{
+
+
+				return;
+			}
+		}
+
+		for (UEdGraphPin* pin : Pins)
+		{
+			if (pin->PinName != NAME_None && pin->Direction == EGPD_Input)
+			{
+				pin->bHidden = true;
 			}
 		}
 	}

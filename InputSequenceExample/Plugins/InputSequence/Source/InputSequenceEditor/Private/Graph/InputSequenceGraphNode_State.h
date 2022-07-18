@@ -31,6 +31,8 @@ public:
 
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
 
+	virtual void NodeConnectionListChanged() override;
+
 protected:
 
 	UPROPERTY(EditAnywhere)
