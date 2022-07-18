@@ -173,36 +173,34 @@ void UInputSequenceGraphNode_State::ReconstructNode()
 		}
 	}
 
-	const int32 flowPinsNum = 2;
-	
-	const int32 oldInputActionPinsCount = (Pins.Num() - flowPinsNum) / 2;
-
-	for (UEdGraphPin* pin : pinsToRemove)
-	{
-		for (size_t i = 0; i < pin->LinkedTo.Num(); i++)
-		{
-			pin->LinkedTo[i]->LinkedTo.Remove(pin);
-		}
-
-		RemovePin(pin);
-	}
+	for (UEdGraphPin* pin : pinsToRemove) RemovePin(pin);
 
 	FCreatePinParams params = FCreatePinParams();
+	params.Index = 2; // Flow pins are first two pins in any case
+
+	int32 newPins = 0;
 
 	for (size_t i = 0; i < actionMappings.Num(); i++)
 	{
 		const FInputActionKeyMapping& actionMapping = actionMappings[i];
+		
 		if (!FindPin(actionMapping.ActionName))
 		{
 			params.Index++;
 			CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+			newPins++;
 
 			params.Index++;
 			CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+			newPins++;
+		}
+		else
+		{
+			params.Index += 2;
 		}
 	}
 
-	if (pinsToRemove.Num() > 0 || params.Index >= 0) Modify();
+	if (pinsToRemove.Num() * newPins > 0) Modify();
 }
 
 void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
