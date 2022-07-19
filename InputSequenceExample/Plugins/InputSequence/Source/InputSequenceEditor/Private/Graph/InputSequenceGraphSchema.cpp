@@ -77,15 +77,15 @@ void FInputSequenceGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCol
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
-TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
-{
-	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(InNode))
-	{
-		return SNew(SInputSequenceGraphNode_State);
-	}
-
-	return nullptr;
-}
+//////TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
+//////{
+//////	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(InNode))
+//////	{
+//////		return SNew(SInputSequenceGraphNode_State, stateNode);
+//////	}
+//////
+//////	return nullptr;
+//////}
 
 TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPin) const
 {
@@ -107,6 +107,8 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
 
 const FName UInputSequenceGraphSchema::PC_ActionAxis = FName("UInputSequenceGraphSchema_PC_ActionAxis");
+
+const FName UInputSequenceGraphSchema::PSC_Hidden = FName("UInputSequenceGraphSchema_PSC_Hidden");
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -168,7 +170,7 @@ void UInputSequenceGraphNode_State::AllocateDefaultPins()
 	for (const FInputActionKeyMapping& actionMapping : actionMappings)
 	{
 		UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName);
-		InputPin->bHidden = true;
+		InputPin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
 
 		UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName);
 	}
@@ -280,6 +282,26 @@ void UInputSequenceGraphNode_State::NodeConnectionListChanged()
 			}
 		}
 	}
+}
+
+void UInputSequenceGraphNode_State::Test()
+{
+	for (UEdGraphPin* pin : Pins)
+	{
+		if (pin->PinType.PinSubCategory == UInputSequenceGraphSchema::PSC_Hidden)
+			pin->PinType.PinSubCategory = NAME_None;
+		else
+			pin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
+	}
+}
+
+EVisibility SGraphPin_ActionAxis::Visibility_Raw() const
+{
+	if (GetPinObj()->PinType.PinSubCategory == UInputSequenceGraphSchema::PSC_Hidden) return EVisibility::Hidden;
+	
+	if (UseLowDetailPinNames()) return EVisibility::HitTestInvisible;
+	
+	return EVisibility::Visible;
 }
 
 #undef LOCTEXT_NAMESPACE

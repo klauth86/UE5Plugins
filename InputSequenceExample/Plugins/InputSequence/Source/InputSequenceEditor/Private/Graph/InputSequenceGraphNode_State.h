@@ -33,6 +33,9 @@ public:
 
 	virtual void NodeConnectionListChanged() override;
 
+	UFUNCTION(CallInEditor)
+		void Test();
+
 protected:
 
 	UPROPERTY(EditAnywhere)

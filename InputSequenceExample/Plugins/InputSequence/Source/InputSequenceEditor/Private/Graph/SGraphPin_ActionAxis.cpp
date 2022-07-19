@@ -4,7 +4,7 @@
 
 void SGraphPin_ActionAxis::Construct(const FArguments& InArgs, UEdGraphPin* InPin)
 {
-	SGraphPin::Construct(SGraphPin::FArguments().Visibility_Raw(this, &SGraphPin_ActionAxis::Visibility_Raw), InPin);
-}
+	SGraphPin::Construct(SGraphPin::FArguments(), InPin);
 
-EVisibility SGraphPin_ActionAxis::Visibility_Raw() const { return GetPinObj()->bHidden ? EVisibility::Hidden : EVisibility::Visible; }
+	SetVisibility(MakeAttributeRaw(this, &SGraphPin_ActionAxis::Visibility_Raw));
+}

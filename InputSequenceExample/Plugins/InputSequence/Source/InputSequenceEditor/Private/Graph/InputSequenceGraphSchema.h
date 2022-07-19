@@ -43,6 +43,8 @@ public:
 
 	static const FName PC_ActionAxis;
 
+	static const FName PSC_Hidden;
+
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 
 	virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* pinA, const UEdGraphPin* pinB) const override;
