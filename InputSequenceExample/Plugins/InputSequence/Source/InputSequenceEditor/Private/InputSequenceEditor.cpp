@@ -23,6 +23,9 @@ void FInputSequenceEditorModule::StartupModule()
 		if (registeredAssetTypeAction.IsValid()) AssetTools.RegisterAssetTypeActions(registeredAssetTypeAction.ToSharedRef());
 	}
 
+	InputSequenceGraphNodeFactory = MakeShareable(new FInputSequenceGraphNodeFactory());
+	FEdGraphUtilities::RegisterVisualNodeFactory(InputSequenceGraphNodeFactory);
+
 	InputSequenceGraphPinFactory = MakeShareable(new FInputSequenceGraphPinFactory());
 	FEdGraphUtilities::RegisterVisualPinFactory(InputSequenceGraphPinFactory);
 }
@@ -31,6 +34,9 @@ void FInputSequenceEditorModule::ShutdownModule()
 {
 	FEdGraphUtilities::UnregisterVisualPinFactory(InputSequenceGraphPinFactory);
 	InputSequenceGraphPinFactory.Reset();
+
+	FEdGraphUtilities::UnregisterVisualNodeFactory(InputSequenceGraphNodeFactory);
+	InputSequenceGraphNodeFactory.Reset();
 
 	if (FModuleManager::Get().IsModuleLoaded(AssetToolsModuleName))
 	{

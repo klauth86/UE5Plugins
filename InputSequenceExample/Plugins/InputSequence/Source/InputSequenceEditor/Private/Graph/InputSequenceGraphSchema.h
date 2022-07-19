@@ -41,7 +41,7 @@ public:
 
 	static const FName PC_Exec;
 
-	static const FName PC_InputAction;
+	static const FName PC_ActionAxis;
 
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 

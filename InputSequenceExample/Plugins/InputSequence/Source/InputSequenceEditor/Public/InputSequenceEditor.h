@@ -19,5 +19,6 @@ protected:
 private:
 	TArray<FName> RegisteredPTNames;
 	TArray<TSharedPtr<FAssetTypeActions_Base>> RegisteredAssetTypeActions;
+	TSharedPtr<FInputSequenceGraphNodeFactory> InputSequenceGraphNodeFactory;
 	TSharedPtr<FInputSequenceGraphPinFactory> InputSequenceGraphPinFactory;
 };

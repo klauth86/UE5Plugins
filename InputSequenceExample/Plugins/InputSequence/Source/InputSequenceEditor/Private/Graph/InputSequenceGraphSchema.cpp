@@ -5,8 +5,10 @@
 #include "Graph/InputSequenceGraphNode_Start.h"
 #include "Graph/InputSequenceGraphNode_Finish.h"
 #include "Graph/InputSequenceGraphNode_State.h"
+#include "Graph/SInputSequenceGraphNode_State.h"
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
+#include "Graph/SGraphPin_ActionAxis.h"
 #include "Classes/EditorStyleSettings.h"
 #include "GameFramework/InputSettings.h"
 
@@ -75,11 +77,23 @@ void FInputSequenceGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCol
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
+TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
+{
+	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(InNode))
+	{
+		return SNew(SInputSequenceGraphNode_State);
+	}
+
+	return nullptr;
+}
+
 TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPin) const
 {
-	if (InPin->GetSchema()->IsA<UInputSequenceGraphSchema>() && InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Exec)
+	if (InPin->GetSchema()->IsA<UInputSequenceGraphSchema>())
 	{
-		return SNew(SGraphPinExec, InPin);
+		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Exec) return SNew(SGraphPinExec, InPin);
+
+		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_ActionAxis) return SNew(SGraphPin_ActionAxis, InPin);
 	}
 
 	return SNew(SGraphPin, InPin);
@@ -92,7 +106,7 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
 
-const FName UInputSequenceGraphSchema::PC_InputAction = FName("UInputSequenceGraphSchema_PC_InputAction");
+const FName UInputSequenceGraphSchema::PC_ActionAxis = FName("UInputSequenceGraphSchema_PC_ActionAxis");
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -153,10 +167,10 @@ void UInputSequenceGraphNode_State::AllocateDefaultPins()
 	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
 	for (const FInputActionKeyMapping& actionMapping : actionMappings)
 	{
-		UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+		UEdGraphPin* InputPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName);
 		InputPin->bHidden = true;
 
-		UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName);
+		UEdGraphPin* OutputPin = CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName);
 	}
 }
 
@@ -189,11 +203,11 @@ void UInputSequenceGraphNode_State::ReconstructNode()
 		if (!FindPin(actionMapping.ActionName))
 		{
 			params.Index++;
-			CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+			CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName, params);
 			newPins++;
 
 			params.Index++;
-			CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_InputAction, actionMapping.ActionName, params);
+			CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName, params);
 			newPins++;
 		}
 		else

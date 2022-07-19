@@ -4,6 +4,11 @@
 
 #include "EdGraphUtilities.h"
 
+struct FInputSequenceGraphNodeFactory : public FGraphPanelNodeFactory
+{
+	virtual TSharedPtr<SGraphNode> CreateNode(UEdGraphNode* InNode) const override;
+};
+
 struct FInputSequenceGraphPinFactory : public FGraphPanelPinFactory
 {
 public:
