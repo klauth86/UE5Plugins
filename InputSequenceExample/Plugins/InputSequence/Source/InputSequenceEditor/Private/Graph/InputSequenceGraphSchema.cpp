@@ -31,6 +31,37 @@ public:
 		{
 			Params.WireThickness = 4;
 			Params.bDrawBubbles = true;
+			Params.bUserFlag1 = true;
+		}
+
+		const bool bDeemphasizeUnhoveredPins = HoveredPins.Num() > 0;
+		if (bDeemphasizeUnhoveredPins)
+		{
+			ApplyHoverDeemphasis(OutputPin, InputPin, /*inout*/ Params.WireThickness, /*inout*/ Params.WireColor);
+		}
+	}
+
+	virtual void DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint, const FConnectionParams& Params) override
+	{
+		DrawConnection(
+			WireLayerID,
+			StartPoint,
+			EndPoint,
+			Params);
+
+		// Draw the arrow
+		if (ArrowImage != nullptr && !Params.bUserFlag1)
+		{
+			FVector2D ArrowPoint = EndPoint - ArrowRadius;
+
+			FSlateDrawElement::MakeBox(
+				DrawElementsList,
+				ArrowLayerID,
+				FPaintGeometry(ArrowPoint, ArrowImage->ImageSize * ZoomFactor, ZoomFactor),
+				ArrowImage,
+				ESlateDrawEffect::None,
+				Params.WireColor
+			);
 		}
 	}
 
@@ -190,7 +221,7 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_ActionAxis) return SNew(SGraphPin_ActionAxis, InPin);
 	}
 
-	return SNew(SGraphPin, InPin);
+	return nullptr;
 }
 
 FConnectionDrawingPolicy* FInputSequenceGraphPinConnectionFactory::CreateConnectionPolicy(const UEdGraphSchema* Schema, int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const class FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const
