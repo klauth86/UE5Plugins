@@ -31,6 +31,9 @@ public:
 		{
 			Params.WireThickness = 4;
 			Params.bDrawBubbles = true;
+		}
+		else
+		{
 			Params.bUserFlag1 = true;
 		}
 
@@ -44,13 +47,13 @@ public:
 	virtual void DrawSplineWithArrow(const FVector2D& StartPoint, const FVector2D& EndPoint, const FConnectionParams& Params) override
 	{
 		DrawConnection(
-			WireLayerID,
+			Params.bUserFlag1 ? ArrowLayerID : WireLayerID,
 			StartPoint,
 			EndPoint,
 			Params);
 
 		// Draw the arrow
-		if (ArrowImage != nullptr && !Params.bUserFlag1)
+		if (ArrowImage != nullptr && Params.bUserFlag1)
 		{
 			FVector2D ArrowPoint = EndPoint - ArrowRadius;
 
