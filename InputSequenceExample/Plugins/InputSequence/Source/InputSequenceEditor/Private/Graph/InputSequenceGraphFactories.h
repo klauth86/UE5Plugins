@@ -14,3 +14,9 @@ struct FInputSequenceGraphPinFactory : public FGraphPanelPinFactory
 public:
 	virtual TSharedPtr<class SGraphPin> CreatePin(class UEdGraphPin* Pin) const override;
 };
+
+struct FInputSequenceGraphPinConnectionFactory : public FGraphPanelPinConnectionFactory
+{
+public:
+	virtual FConnectionDrawingPolicy* CreateConnectionPolicy(const UEdGraphSchema* Schema, int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const class FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const override;
+};

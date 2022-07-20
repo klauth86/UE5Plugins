@@ -28,10 +28,16 @@ void FInputSequenceEditorModule::StartupModule()
 
 	InputSequenceGraphPinFactory = MakeShareable(new FInputSequenceGraphPinFactory());
 	FEdGraphUtilities::RegisterVisualPinFactory(InputSequenceGraphPinFactory);
+
+	InputSequenceGraphPinConnectionFactory = MakeShareable(new FInputSequenceGraphPinConnectionFactory);
+	FEdGraphUtilities::RegisterVisualPinConnectionFactory(InputSequenceGraphPinConnectionFactory);
 }
 
 void FInputSequenceEditorModule::ShutdownModule()
 {
+	FEdGraphUtilities::UnregisterVisualPinConnectionFactory(InputSequenceGraphPinConnectionFactory);
+	InputSequenceGraphPinConnectionFactory.Reset();
+
 	FEdGraphUtilities::UnregisterVisualPinFactory(InputSequenceGraphPinFactory);
 	InputSequenceGraphPinFactory.Reset();
 

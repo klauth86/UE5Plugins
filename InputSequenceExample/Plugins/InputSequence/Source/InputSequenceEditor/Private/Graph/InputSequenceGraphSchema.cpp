@@ -11,8 +11,33 @@
 #include "Graph/SGraphPin_ActionAxis.h"
 #include "Classes/EditorStyleSettings.h"
 #include "GameFramework/InputSettings.h"
+#include "ConnectionDrawingPolicy.h"
 
 #define LOCTEXT_NAMESPACE "UInputSequenceGraphSchema"
+
+class FInputSequenceConnectionDrawingPolicy : public FConnectionDrawingPolicy
+{
+public:	
+	FInputSequenceConnectionDrawingPolicy(int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const FSlateRect& InClippingRect, FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj)
+		: FConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements)
+		, GraphObj(InGraphObj)
+	{}
+
+	virtual void DetermineWiringStyle(UEdGraphPin* OutputPin, UEdGraphPin* InputPin, /*inout*/ FConnectionParams& Params) override
+	{
+		FConnectionDrawingPolicy::DetermineWiringStyle(OutputPin, InputPin, Params);
+
+		if (OutputPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Exec)
+		{
+			Params.WireThickness = 4;
+			Params.bDrawBubbles = true;
+		}
+	}
+
+protected:
+	UEdGraph* GraphObj;
+	TMap<UEdGraphNode*, int32> NodeWidgetMap;
+};
 
 template<class T>
 TSharedPtr<T> AddNewActionAs(FGraphContextMenuBuilder& ContextMenuBuilder, const FText& Category, const FText& MenuDesc, const FText& Tooltip, const int32 Grouping = 0)
@@ -98,7 +123,9 @@ void ShowReleasePins(FName draggedPinName, const UEdGraphNode* draggedPinNode)
 		UEdGraphPin* releasePin = currentNode->FindPin(draggedPinName, EGPD_Input);
 		releasePin->PinType.PinSubCategory = NAME_None;
 
-		currentNode = GetNextStateNode(currentNode);
+		UEdGraphPin* pressPin = currentNode->FindPin(draggedPinName, EGPD_Output);
+
+		currentNode = pressPin->HasAnyConnections() ? nullptr : GetNextStateNode(currentNode);
 	}
 }
 
@@ -164,6 +191,16 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 	}
 
 	return SNew(SGraphPin, InPin);
+}
+
+FConnectionDrawingPolicy* FInputSequenceGraphPinConnectionFactory::CreateConnectionPolicy(const UEdGraphSchema* Schema, int32 InBackLayerID, int32 InFrontLayerID, float ZoomFactor, const class FSlateRect& InClippingRect, class FSlateWindowElementList& InDrawElements, UEdGraph* InGraphObj) const
+{
+	if (Schema->IsA<UInputSequenceGraphSchema>())
+	{
+		return new FInputSequenceConnectionDrawingPolicy(InBackLayerID, InFrontLayerID, ZoomFactor, InClippingRect, InDrawElements, InGraphObj);;
+	}
+
+	return nullptr;
 }
 
 UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
