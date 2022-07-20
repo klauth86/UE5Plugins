@@ -31,10 +31,7 @@ public:
 
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
 
-	virtual void NodeConnectionListChanged() override;
-
-	UFUNCTION(CallInEditor)
-		void Test();
+	virtual void PinConnectionListChanged(UEdGraphPin* Pin) override;
 
 protected:
 

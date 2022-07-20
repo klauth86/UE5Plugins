@@ -77,6 +77,88 @@ void FInputSequenceGraphSchemaAction_NewNode::AddReferencedObjects(FReferenceCol
 	Collector.AddReferencedObject(NodeTemplate);
 }
 
+FName GetActionPinSubCategory(const UEdGraphPin* pin) { return pin->HasAnyConnections() ? NAME_None : UInputSequenceGraphSchema::PSC_Hidden; }
+
+void ShowReleasePins(const UEdGraphPin* draggedPin, const UEdGraphNode* node)
+{
+	if (UEdGraphPin* flowOutputPin = node->FindPin(NAME_None, EGPD_Output))
+	{
+		UInputSequenceGraphNode_State* nextStateNode = flowOutputPin->LinkedTo.IsValidIndex(0)
+			? Cast<UInputSequenceGraphNode_State>(flowOutputPin->LinkedTo[0]->GetOwningNode())
+			: nullptr;
+		if (nextStateNode)
+		{
+			UEdGraphPin* nextReleasePin = nextStateNode->FindPin(draggedPin->PinName, EGPD_Input);
+			nextReleasePin->PinType.PinSubCategory = NAME_None;
+
+			ShowReleasePins(draggedPin, nextStateNode);
+		}
+	}
+}
+
+void HideReleasePins(const UEdGraphPin* draggedPin, const UEdGraphNode* node)
+{
+	if (UEdGraphPin* flowOutputPin = node->FindPin(NAME_None, EGPD_Output))
+	{
+		UInputSequenceGraphNode_State* nextStateNode = flowOutputPin->LinkedTo.IsValidIndex(0)
+			? Cast<UInputSequenceGraphNode_State>(flowOutputPin->LinkedTo[0]->GetOwningNode())
+			: nullptr;
+		if (nextStateNode)
+		{
+			UEdGraphPin* nextReleasePin = nextStateNode->FindPin(draggedPin->PinName, EGPD_Input);
+			nextReleasePin->PinType.PinSubCategory = GetActionPinSubCategory(nextReleasePin);
+
+			HideReleasePins(draggedPin, nextStateNode);
+		}
+	}
+}
+
+void PressAction(const UEdGraphPin* pressedPin, const UEdGraphNode* node)
+{
+	if (UEdGraphPin* flowOutputPin = node->FindPin(NAME_None, EGPD_Output))
+	{
+		UInputSequenceGraphNode_State* nextStateNode = flowOutputPin->LinkedTo.IsValidIndex(0)
+			? Cast<UInputSequenceGraphNode_State>(flowOutputPin->LinkedTo[0]->GetOwningNode())
+			: nullptr;
+		if (nextStateNode)
+		{
+			UEdGraphPin* nextReleasePin = nextStateNode->FindPin(pressedPin->PinName, EGPD_Input);
+
+			if (pressedPin->LinkedTo.Contains(nextReleasePin)) return;
+
+			nextReleasePin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
+
+			UEdGraphPin* nextPressPin = nextStateNode->FindPin(pressedPin->PinName, EGPD_Output);
+			nextPressPin->BreakAllPinLinks(false);
+			nextPressPin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
+
+			PressAction(pressedPin, nextStateNode);
+		}
+	}
+}
+
+void ReleaseAction(const UEdGraphPin* releasedPin, const UEdGraphNode* node)
+{
+	if (UEdGraphPin* flowOutputPin = node->FindPin(NAME_None, EGPD_Output))
+	{
+		UInputSequenceGraphNode_State* nextStateNode = flowOutputPin->LinkedTo.IsValidIndex(0)
+			? Cast<UInputSequenceGraphNode_State>(flowOutputPin->LinkedTo[0]->GetOwningNode())
+			: nullptr;
+		if (nextStateNode)
+		{
+			UEdGraphPin* nextReleasePin = nextStateNode->FindPin(releasedPin->PinName, EGPD_Input);
+			nextReleasePin->PinType.PinSubCategory = NAME_None;
+
+			if (nextReleasePin->HasAnyConnections()) return;
+
+			UEdGraphPin* nextPressPin = nextStateNode->FindPin(releasedPin->PinName, EGPD_Output);
+			nextPressPin->PinType.PinSubCategory = NAME_None;
+
+			ReleaseAction(releasedPin, nextStateNode);
+		}
+	}
+}
+
 //////TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
 //////{
 //////	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(InNode))
@@ -112,6 +194,11 @@ const FName UInputSequenceGraphSchema::PSC_Hidden = FName("UInputSequenceGraphSc
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
+	if (ContextMenuBuilder.FromPin)
+	{
+		HideReleasePins(ContextMenuBuilder.FromPin, ContextMenuBuilder.FromPin->GetOwningNode());
+	}
+
 	// Add state node
 	TSharedPtr<FInputSequenceGraphSchemaAction_NewNode> Action = AddNewActionAs<FInputSequenceGraphSchemaAction_NewNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_State", "Add State Node..."), LOCTEXT("AddNode_State_Tooltip", "A new State Node"));
 	Action->NodeTemplate = NewObject<UInputSequenceGraphNode_State>(ContextMenuBuilder.OwnerOfTemporaries);
@@ -260,39 +347,50 @@ void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
 	}
 }
 
-void UInputSequenceGraphNode_State::NodeConnectionListChanged()
+void UInputSequenceGraphNode_State::PinConnectionListChanged(UEdGraphPin* Pin)
 {
-	if (UEdGraphPin* flowInputPin = FindPin(NAME_None, EGPD_Input))
+	if (Pin->Direction == EGPD_Output)
 	{
-		if (flowInputPin->LinkedTo.Num() > 0)
-		{
-			if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(flowInputPin->LinkedTo[0]->GetOwningNode()))
+		if (Pin->PinName != NAME_None)
+		{			
+			if (!Pin->HasAnyConnections())
 			{
-
-
-				return;
+				ReleaseAction(Pin, Pin->GetOwningNode());
+			}
+			else
+			{
+				HideReleasePins(Pin, Pin->GetOwningNode());
+				PressAction(Pin, Pin->GetOwningNode());
 			}
 		}
-
-		for (UEdGraphPin* pin : Pins)
+		else
 		{
-			if (pin->PinName != NAME_None && pin->Direction == EGPD_Input)
+			if (!Pin->HasAnyConnections())
 			{
-				pin->bHidden = true;
+				for (UEdGraphPin* otherPin : Pins)
+				{
+					if (otherPin->PinName != NAME_None && otherPin->Direction == EGPD_Output)
+					{
+						otherPin->BreakAllPinLinks(true);
+					}
+				}
 			}
 		}
+	}
+	else if (Pin->PinName != NAME_None)
+	{
+		Pin->PinType.PinSubCategory = GetActionPinSubCategory(Pin);
 	}
 }
 
-void UInputSequenceGraphNode_State::Test()
+TSharedRef<FDragDropOperation> SGraphPin_ActionAxis::SpawnPinDragEvent(const TSharedRef<class SGraphPanel>& InGraphPanel, const TArray< TSharedRef<SGraphPin> >& InStartingPins)
 {
-	for (UEdGraphPin* pin : Pins)
+	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(GetPinObj()->GetOwningNode()))
 	{
-		if (pin->PinType.PinSubCategory == UInputSequenceGraphSchema::PSC_Hidden)
-			pin->PinType.PinSubCategory = NAME_None;
-		else
-			pin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
+		ShowReleasePins(GetPinObj(), GetPinObj()->GetOwningNode());
 	}
+
+	return SGraphPin::SpawnPinDragEvent(InGraphPanel, InStartingPins);
 }
 
 EVisibility SGraphPin_ActionAxis::Visibility_Raw() const

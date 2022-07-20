@@ -24,7 +24,7 @@ T* GetTypedFirstOuter(TSharedPtr<IPropertyHandle> propertyHandle)
 	{
 		TArray<UObject*> outerObjects;
 		propertyHandle->GetOuterObjects(outerObjects);
-		if (outerObjects.Num() > 0) return Cast<T>(outerObjects[0]);
+		if (outerObjects.IsValidIndex(0)) return Cast<T>(outerObjects[0]);
 	}
 
 	return nullptr;
