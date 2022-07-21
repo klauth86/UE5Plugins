@@ -21,15 +21,22 @@ struct FInputSequenceGraphSchemaAction_NewNode : public FEdGraphSchemaAction
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
+};
 
-	template <typename NodeType>
-	static NodeType* SpawnNodeFromTemplate(class UEdGraph* ParentGraph, NodeType* InTemplateNode, const FVector2D Location = FVector2D(0.0f, 0.0f), bool bSelectNewNode = true)
-	{
-		FInputSMGraphSchemaAction_NewStateNode Action;
-		Action.NodeTemplate = InTemplateNode;
+USTRUCT()
+struct FInputSequenceGraphSchemaAction_AddPin : public FEdGraphSchemaAction
+{
+	GENERATED_BODY()
 
-		return Cast<NodeType>(Action.PerformAction(ParentGraph, NULL, Location, bSelectNewNode));
-	}
+	FName ActionName;
+
+	FInputSequenceGraphSchemaAction_AddPin() : FEdGraphSchemaAction(), ActionName(NAME_None) {}
+
+	FInputSequenceGraphSchemaAction_AddPin(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
+		: FEdGraphSchemaAction(MoveTemp(InNodeCategory), MoveTemp(InMenuDesc), MoveTemp(InToolTip), InGrouping), ActionName(NAME_None)
+	{}
+
+	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
 };
 
 UCLASS()
@@ -40,6 +47,8 @@ class UInputSequenceGraphSchema : public UEdGraphSchema
 public:
 
 	static const FName PC_Exec;
+
+	static const FName PC_Add;
 
 	static const FName PC_ActionAxis;
 
