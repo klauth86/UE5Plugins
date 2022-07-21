@@ -14,13 +14,11 @@ public:
 
 	virtual ~SInputSequenceGraphNode_Press();
 
-	TSharedRef<SWidget> AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip = nullptr);
-
 	virtual void CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox) override;
 
-	virtual FReply OnAddPin() override;
-
 protected:
+
+	TSharedRef<SWidget> AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip = nullptr);
 
 	TSharedRef<SWidget> OnGetAddButtonMenuContent();
 

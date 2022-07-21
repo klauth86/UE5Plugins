@@ -435,51 +435,12 @@ void SInputSequenceGraphNode_Press::Construct(const FArguments& InArgs, UEdGraph
 	UpdateGraphNode();
 }
 
-TSharedRef<SWidget> SInputSequenceGraphNode_Press::AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip)
+SInputSequenceGraphNode_Press::~SInputSequenceGraphNode_Press()
 {
-	TSharedPtr<SWidget> ButtonContent;
-	SAssignNew(ButtonContent, SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.HAlign(HAlign_Left)
-		[
-			SNew(STextBlock)
-			.Text(PinText)
-		.ColorAndOpacity(FLinearColor::White)
-		]
-	+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
-		.Padding(7, 0, 0, 0)
-		[
-			SNew(SImage)
-			.Image(FEditorStyle::GetBrush(TEXT("Icons.PlusCircle")))
-		];
-
-	TSharedPtr<SToolTip> Tooltip;
-
-	if (CustomTooltip.IsValid())
+	if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(GraphNode))
 	{
-		Tooltip = CustomTooltip;
+		pressNode->OnUpdateGraphNode.Unbind();
 	}
-
-	AddButton = SNew(SComboButton)
-		.HasDownArrow(false)
-		.ButtonStyle(FEditorStyle::Get(), "NoBorder")
-		.ForegroundColor(FSlateColor::UseForeground())
-		.OnGetMenuContent(this, &SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent)
-		.ContentPadding(FMargin(2))
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.ToolTipText(LOCTEXT("AddPinButtonToolTip", "Connect this pin to add a new typed pin, or choose from the drop-down."))
-		.ButtonContent()
-		[
-			ButtonContent.ToSharedRef()
-		];
-
-	AddButton->SetCursor(EMouseCursor::Hand);
-
-	return AddButton.ToSharedRef();
 }
 
 void SInputSequenceGraphNode_Press::CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox)
@@ -500,19 +461,44 @@ void SInputSequenceGraphNode_Press::CreateOutputSideAddButton(TSharedPtr<SVertic
 		];
 }
 
-FReply SInputSequenceGraphNode_Press::OnAddPin()
+TSharedRef<SWidget> SInputSequenceGraphNode_Press::AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip)
 {
+	TSharedPtr<SWidget> ButtonContent;
+	SAssignNew(ButtonContent, SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.HAlign(HAlign_Left)
+		[
+			SNew(STextBlock).Text(PinText).ColorAndOpacity(FLinearColor::White)
+		]
+	+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(7, 0, 0, 0)
+		[
+			SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("Icons.PlusCircle")))
+		];
 
+	TSharedPtr<SToolTip> Tooltip;
+	if (CustomTooltip.IsValid()) Tooltip = CustomTooltip;
 
-	return FReply::Handled();
-}
+	AddButton = SNew(SComboButton)
+		.HasDownArrow(false)
+		.ButtonStyle(FEditorStyle::Get(), "NoBorder")
+		.ForegroundColor(FSlateColor::UseForeground())
+		.OnGetMenuContent(this, &SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent)
+		.ContentPadding(FMargin(2))
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.ToolTipText(LOCTEXT("AddPinButtonToolTip", "Connect this pin to add a new typed pin, or choose from the drop-down."))
+		.ButtonContent()
+		[
+			ButtonContent.ToSharedRef()
+		];
 
-SInputSequenceGraphNode_Press::~SInputSequenceGraphNode_Press()
-{
-	if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(GraphNode))
-	{
-		pressNode->OnUpdateGraphNode.Unbind();
-	}
+	AddButton->SetCursor(EMouseCursor::Hand);
+
+	return AddButton.ToSharedRef();
 }
 
 TSharedRef<SWidget> SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent()
