@@ -8,7 +8,7 @@ void SGraphPin_Add::Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinO
 {
 	SetShowLabel(false);
 
-	SGraphPin::Construct(SGraphPin::FArguments().Visibility_Raw(this, &SGraphPin_Add::Visibility_Raw), InGraphPinObj);
+	SGraphPin::Construct(SGraphPin::FArguments(), InGraphPinObj);
 
 	TSharedPtr<SHorizontalBox> PinBox = GetFullPinHorizontalRowWidget().Pin();
 	if (PinBox.IsValid())
