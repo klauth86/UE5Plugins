@@ -6,11 +6,10 @@
 #include "Graph/InputSequenceGraphNode_Finish.h"
 #include "Graph/InputSequenceGraphNode_Press.h"
 #include "Graph/InputSequenceGraphNode_Release.h"
-#include "Graph/InputSequenceGraphNode_State.h"
-#include "Graph/SInputSequenceGraphNode_State.h"
+#include "Graph/SInputSequenceGraphNode_Press.h"
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
-#include "Graph/SGraphPin_ActionAxis.h"
+#include "Graph/SGraphPin_Action.h"
 #include "Graph/SGraphPin_Add.h"
 #include "SGraphActionMenu.h"
 #include "Classes/EditorStyleSettings.h"
@@ -146,97 +145,34 @@ UEdGraphNode* FInputSequenceGraphSchemaAction_AddPin::PerformAction(class UEdGra
 	// If there is a template, we actually use it
 	if (ActionName != NAME_None)
 	{
+		const int32 execPinCount = 2;
+
 		const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddPin", "Add Pin"));
-		
-		//////ParentGraph->Modify();
-		//////
-		//////if (FromPin)
-		//////{
-		//////	FromPin->Modify();
-		//////}
+
+		UEdGraphNode::FCreatePinParams params;
+		params.Index = CorrectedActionIndex + execPinCount;
+		FromPin->GetOwningNode()->CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Action, ActionName, params);
+
+		FromPin->GetOwningNode()->Modify();
+
+		if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(FromPin->GetOwningNode()))
+		{
+			pressNode->OnUpdateGraphNode.ExecuteIfBound();
+		}
 	}
 
 	return ResultNode;
 }
 
-UInputSequenceGraphNode_State* GetNextStateNode(const UEdGraphNode* node)
+TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
 {
-	if (UEdGraphPin* flowOutputPin = node->FindPin(NAME_None, EGPD_Output))
+	if (UInputSequenceGraphNode_Press* stateNode = Cast<UInputSequenceGraphNode_Press>(InNode))
 	{
-		if (flowOutputPin->LinkedTo.IsValidIndex(0))
-		{
-			return Cast<UInputSequenceGraphNode_State>(flowOutputPin->LinkedTo[0]->GetOwningNode());
-		}
+		return SNew(SInputSequenceGraphNode_Press, stateNode);
 	}
 
 	return nullptr;
 }
-
-void ShowReleasePins(FName draggedPinName, const UEdGraphNode* draggedPinNode)
-{
-	const UEdGraphNode* currentNode = draggedPinNode ? GetNextStateNode(draggedPinNode) : nullptr;
-	while (currentNode)
-	{
-		UEdGraphPin* releasePin = currentNode->FindPin(draggedPinName, EGPD_Input);
-		releasePin->PinType.PinSubCategory = NAME_None;
-
-		UEdGraphPin* pressPin = currentNode->FindPin(draggedPinName, EGPD_Output);
-
-		currentNode = pressPin->HasAnyConnections() ? nullptr : GetNextStateNode(currentNode);
-	}
-}
-
-void HideReleasePins(FName draggedPinName, const UEdGraphNode* draggedPinNode)
-{
-	const UEdGraphNode* currentNode = draggedPinNode ? GetNextStateNode(draggedPinNode) : nullptr;
-	while (currentNode)
-	{
-		UEdGraphPin* releasePin = currentNode->FindPin(draggedPinName, EGPD_Input);
-		releasePin->PinType.PinSubCategory = UInputSequenceGraphSchema::PSC_Hidden;
-
-		currentNode = GetNextStateNode(currentNode);
-	}
-}
-
-void OnReleaseAction(FName draggedPinName, const UEdGraphNode* pressedPinNode)
-{
-	const UEdGraphNode* currentNode = pressedPinNode ? GetNextStateNode(pressedPinNode) : nullptr;
-	while (currentNode)
-	{
-		UEdGraphPin* releasePin = currentNode->FindPin(draggedPinName, EGPD_Input);
-		releasePin->bNotConnectable = false;
-
-		UEdGraphPin* pressPin = currentNode->FindPin(draggedPinName, EGPD_Output);
-		pressPin->bNotConnectable = false;
-
-		currentNode = pressPin->HasAnyConnections() ? nullptr : GetNextStateNode(currentNode);
-	}
-}
-
-void OnPressAction(FName draggedPinName, const UEdGraphNode* pressedPinNode, const UEdGraphNode* releasedPinNode)
-{
-	const UEdGraphNode* currentNode = pressedPinNode ? GetNextStateNode(pressedPinNode) : nullptr;
-	while (currentNode && currentNode != releasedPinNode)
-	{
-		UEdGraphPin* releasePin = currentNode->FindPin(draggedPinName, EGPD_Input);
-		releasePin->bNotConnectable = true;
-
-		UEdGraphPin* pressPin = currentNode->FindPin(draggedPinName, EGPD_Output);
-		pressPin->bNotConnectable = true;
-
-		currentNode = GetNextStateNode(currentNode);
-	}
-}
-
-//////TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
-//////{
-//////	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(InNode))
-//////	{
-//////		return SNew(SInputSequenceGraphNode_State, stateNode);
-//////	}
-//////
-//////	return nullptr;
-//////}
 
 TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPin) const
 {
@@ -246,7 +182,7 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Add) return SNew(SGraphPin_Add, InPin);
 
-		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_ActionAxis) return SNew(SGraphPin_ActionAxis, InPin);
+		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Action) return SNew(SGraphPin_Action, InPin);
 	}
 
 	return nullptr;
@@ -271,17 +207,12 @@ const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchem
 
 const FName UInputSequenceGraphSchema::PC_Add = FName("UInputSequenceGraphSchema_PC_Add");
 
-const FName UInputSequenceGraphSchema::PC_ActionAxis = FName("UInputSequenceGraphSchema_PC_ActionAxis");
+const FName UInputSequenceGraphSchema::PC_Action = FName("UInputSequenceGraphSchema_PC_Action");
 
 const FName UInputSequenceGraphSchema::PSC_Hidden = FName("UInputSequenceGraphSchema_PSC_Hidden");
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
-	if (ContextMenuBuilder.FromPin)
-	{
-		HideReleasePins(ContextMenuBuilder.FromPin->PinName, ContextMenuBuilder.FromPin->GetOwningNode());
-	}
-
 	// Add Press state node
 	TSharedPtr<FInputSequenceGraphSchemaAction_NewNode> Action = AddNewActionAs<FInputSequenceGraphSchemaAction_NewNode>(ContextMenuBuilder, FText::GetEmpty(), LOCTEXT("AddNode_Press", "Add Press Node..."), LOCTEXT("AddNode_Press_Tooltip", "A new Press Node"));
 	Action->NodeTemplate = NewObject<UInputSequenceGraphNode_Press>(ContextMenuBuilder.OwnerOfTemporaries);
@@ -301,7 +232,7 @@ const FPinConnectionResponse UInputSequenceGraphSchema::CanCreateConnection(cons
 
 	if (pinA->Direction == pinB->Direction) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsOfSameDirection", "Both pins have same direction (both input or both output)"));
 
-	if (pinA->PinName != pinB->PinName) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsMismatched", "The pin types are mismatched (Flow pins should be connected to Flow pins, Key pins - to Key pins)"));
+	if (pinA->PinName != pinB->PinName) return FPinConnectionResponse(CONNECT_RESPONSE_DISALLOW, LOCTEXT("PinsMismatched", "The pin types are mismatched (Flow pins should be connected to Flow pins, Action pins - to Action pins)"));
 
 	return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_AB, TEXT(""));
 }
@@ -343,148 +274,6 @@ void UInputSequenceGraphNode_Release::AllocateDefaultPins()
 {
 	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-}
-
-void UInputSequenceGraphNode_State::AllocateDefaultPins()
-{
-	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-
-	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Add, NAME_None);
-}
-
-void UInputSequenceGraphNode_State::ReconstructNode()
-{
-	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
-
-	TArray<UEdGraphPin*> pinsToRemove;
-	for (UEdGraphPin* pin : Pins)
-	{
-		FName pinName = pin->PinName;
-		if (pinName != NAME_None &&
-			!actionMappings.ContainsByPredicate([pinName](const FInputActionKeyMapping& actionMapping) { return actionMapping.ActionName == pinName; }))
-		{
-			pinsToRemove.Add(pin);
-		}
-	}
-
-	for (UEdGraphPin* pin : pinsToRemove) RemovePin(pin);
-
-	FCreatePinParams params = FCreatePinParams();
-	params.Index = 2; // Flow pins are first two pins in any case
-
-	int32 newPins = 0;
-
-	for (size_t i = 0; i < actionMappings.Num(); i++)
-	{
-		const FInputActionKeyMapping& actionMapping = actionMappings[i];
-		
-		if (!FindPin(actionMapping.ActionName))
-		{
-			params.Index++;
-			CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName, params);
-			newPins++;
-
-			params.Index++;
-			CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_ActionAxis, actionMapping.ActionName, params);
-			newPins++;
-		}
-		else
-		{
-			params.Index += 2;
-		}
-	}
-
-	if (pinsToRemove.Num() * newPins > 0) Modify();
-}
-
-void UInputSequenceGraphNode_State::AutowireNewNode(UEdGraphPin* FromPin)
-{
-	if (FromPin)
-	{
-		if (FromPin->Direction == EGPD_Output)
-		{
-			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Input))
-			{
-				bool connectionCreated = GetSchema()->TryCreateConnection(FromPin, OtherPin);
-
-				if (FromPin->PinName != NAME_None) // Connect flow pins if before we connected input action pins
-				{
-					UEdGraphPin* FromFlowPin = FromPin->GetOwningNode()->FindPin(NAME_None, EGPD_Output);
-					UEdGraphPin* OtherFlowPin = FindPin(NAME_None, EGPD_Input);
-					connectionCreated |= GetSchema()->TryCreateConnection(FromFlowPin, OtherFlowPin);
-				}
-
-				if (connectionCreated) FromPin->GetOwningNode()->NodeConnectionListChanged();
-			}
-		}
-		else if (FromPin->Direction == EGPD_Input)
-		{
-			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Output))
-			{
-				bool connectionCreated = GetSchema()->TryCreateConnection(FromPin, OtherPin);
-
-				if (FromPin->PinName != NAME_None) // Connect flow pins if before we connected input action pins
-				{
-					UEdGraphPin* FromFlowPin = FromPin->GetOwningNode()->FindPin(NAME_None, EGPD_Input);
-					UEdGraphPin* OtherFlowPin = FindPin(NAME_None, EGPD_Output);
-					connectionCreated |= GetSchema()->TryCreateConnection(FromFlowPin, OtherFlowPin);
-				}
-
-				if (connectionCreated) FromPin->GetOwningNode()->NodeConnectionListChanged();
-			}
-		}
-	}
-}
-
-void UInputSequenceGraphNode_State::PinConnectionListChanged(UEdGraphPin* Pin)
-{
-	if (Pin->PinName != NAME_None)
-	{
-		if (Pin->Direction == EGPD_Output)
-		{
-			if (!Pin->HasAnyConnections())
-			{
-				OnReleaseAction(Pin->PinName, Pin->GetOwningNode());
-			}
-			else
-			{
-				HideReleasePins(Pin->PinName, Pin->GetOwningNode());
-				OnPressAction(Pin->PinName, Pin->GetOwningNode(), Pin->LinkedTo[0]->GetOwningNode());
-			}
-		}
-	}
-	else if (!Pin->HasAnyConnections()) // If broke flow link, break all action links
-	{
-		for (UEdGraphPin* otherPin : Pins)
-		{
-			if (otherPin->PinName != NAME_None && otherPin->Direction == Pin->Direction)
-			{
-				otherPin->BreakAllPinLinks(true);
-			}
-		}
-	}
-}
-
-TSharedRef<FDragDropOperation> SGraphPin_ActionAxis::SpawnPinDragEvent(const TSharedRef<class SGraphPanel>& InGraphPanel, const TArray< TSharedRef<SGraphPin> >& InStartingPins)
-{
-	if (UInputSequenceGraphNode_State* stateNode = Cast<UInputSequenceGraphNode_State>(GetPinObj()->GetOwningNode()))
-	{
-		ShowReleasePins(GetPinObj()->PinName, GetPinObj()->GetOwningNode());
-	}
-
-	return SGraphPin::SpawnPinDragEvent(InGraphPanel, InStartingPins);
-}
-
-EVisibility SGraphPin_ActionAxis::Visibility_Raw() const
-{
-	if (GetPinObj()->bNotConnectable) return EVisibility::Hidden;
-
-	if (UInputSequenceGraphSchema::PSC_Hidden == GetPinObj()->PinType.PinSubCategory && !GetPinObj()->HasAnyConnections()) return EVisibility::Hidden;
-	
-	if (UseLowDetailPinNames()) return EVisibility::HitTestInvisible;
-	
-	return EVisibility::Visible;
 }
 
 EVisibility SGraphPin_Add::Visibility_Raw() const
@@ -578,14 +367,39 @@ protected:
 	{
 		const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
 
+		int32 actionIndex = 0;
+
+		TSet<int32> alreadyAdded;
+
+		TArray<TSharedPtr<FEdGraphSchemaAction>> actions;
+
 		for (const FInputActionKeyMapping& actionMapping : actionMappings)
 		{
-			if (!Node->FindPin(actionMapping.ActionName))
+			if (Node->FindPin(actionMapping.ActionName))
 			{
-				TSharedPtr<FInputSequenceGraphSchemaAction_AddPin> Action(new FInputSequenceGraphSchemaAction_AddPin(FText::GetEmpty(), FText::FromName(actionMapping.ActionName), FText::Format(LOCTEXT("AddPin_Action_Tooltip", "Add Action pin for {0}"), FText::FromName(actionMapping.ActionName)), 0));
-				Action->ActionName = actionMapping.ActionName;
-				OutAllActions.AddAction(Action);
+				alreadyAdded.Add(actionIndex);
 			}
+			else
+			{
+				TSharedPtr<FInputSequenceGraphSchemaAction_AddPin> action(new FInputSequenceGraphSchemaAction_AddPin(FText::GetEmpty(), FText::FromName(actionMapping.ActionName), FText::Format(LOCTEXT("AddPin_Action_Tooltip", "Add Action pin for {0}"), FText::FromName(actionMapping.ActionName)), 0));
+				action->ActionName = actionMapping.ActionName;
+				action->ActionIndex = actionIndex;
+				action->CorrectedActionIndex = 0;
+				actions.Add(action);				
+			}
+
+			actionIndex++;
+		}
+
+		for (TSharedPtr<FEdGraphSchemaAction> action : actions)
+		{
+			TSharedPtr<FInputSequenceGraphSchemaAction_AddPin> addPinAction = StaticCastSharedPtr<FInputSequenceGraphSchemaAction_AddPin>(action);
+			for (int32 alreadyAddedIndex : alreadyAdded)
+			{
+				if (alreadyAddedIndex < addPinAction->ActionIndex) addPinAction->CorrectedActionIndex++;
+			}
+
+			OutAllActions.AddAction(action);
 		}
 	}
 
@@ -618,6 +432,28 @@ TSharedRef<SWidget> SGraphPin_Add::OnGetAddButtonMenuContent()
 	AddButton->SetMenuContentWidgetToFocus(MenuWidget->GetSearchBox());
 	
 	return MenuWidget;
+}
+
+void SInputSequenceGraphNode_Press::Construct(const FArguments& InArgs, UEdGraphNode* InNode)
+{
+	SetCursor(EMouseCursor::CardinalCross);
+
+	GraphNode = InNode;
+
+	if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(InNode))
+	{
+		pressNode->OnUpdateGraphNode.BindLambda([&]() { UpdateGraphNode(); });
+	}
+
+	UpdateGraphNode();
+}
+
+SInputSequenceGraphNode_Press::~SInputSequenceGraphNode_Press()
+{
+	if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(GraphNode))
+	{
+		pressNode->OnUpdateGraphNode.Unbind();
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

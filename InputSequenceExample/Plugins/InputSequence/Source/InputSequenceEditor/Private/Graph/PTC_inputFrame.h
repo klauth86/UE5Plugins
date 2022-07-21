@@ -46,10 +46,4 @@ public:
 	virtual void CustomizeHeader(TSharedRef<IPropertyHandle> PropertyHandle, FDetailWidgetRow& HeaderRow, IPropertyTypeCustomizationUtils& CustomizationUtils);
 
 	virtual void CustomizeChildren(TSharedRef<IPropertyHandle> PropertyHandle, IDetailChildrenBuilder& ChildBuilder, IPropertyTypeCustomizationUtils& CustomizationUtils);
-
-protected:
-
-	FText AddRemoveButtonText(FName actionName) const;
-
-	FReply AddRemoveButtonOnClicked(FName actionName) const;
 };

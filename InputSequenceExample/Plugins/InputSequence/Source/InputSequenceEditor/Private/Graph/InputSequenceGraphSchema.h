@@ -30,10 +30,14 @@ struct FInputSequenceGraphSchemaAction_AddPin : public FEdGraphSchemaAction
 
 	FName ActionName;
 
-	FInputSequenceGraphSchemaAction_AddPin() : FEdGraphSchemaAction(), ActionName(NAME_None) {}
+	int32 ActionIndex;
+
+	int32 CorrectedActionIndex;
+
+	FInputSequenceGraphSchemaAction_AddPin() : FEdGraphSchemaAction(), ActionName(NAME_None), ActionIndex(INDEX_NONE), CorrectedActionIndex(INDEX_NONE) {}
 
 	FInputSequenceGraphSchemaAction_AddPin(FText InNodeCategory, FText InMenuDesc, FText InToolTip, const int32 InGrouping)
-		: FEdGraphSchemaAction(MoveTemp(InNodeCategory), MoveTemp(InMenuDesc), MoveTemp(InToolTip), InGrouping), ActionName(NAME_None)
+		: FEdGraphSchemaAction(MoveTemp(InNodeCategory), MoveTemp(InMenuDesc), MoveTemp(InToolTip), InGrouping), ActionName(NAME_None), ActionIndex(INDEX_NONE), CorrectedActionIndex(INDEX_NONE)
 	{}
 
 	virtual UEdGraphNode* PerformAction(class UEdGraph* ParentGraph, UEdGraphPin* FromPin, const FVector2D Location, bool bSelectNewNode = true) override;
@@ -50,7 +54,7 @@ public:
 
 	static const FName PC_Add;
 
-	static const FName PC_ActionAxis;
+	static const FName PC_Action;
 
 	static const FName PSC_Hidden;
 

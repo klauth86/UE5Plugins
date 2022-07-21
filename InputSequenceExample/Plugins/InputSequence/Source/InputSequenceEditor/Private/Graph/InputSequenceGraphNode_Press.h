@@ -13,4 +13,8 @@ class UInputSequenceGraphNode_Press : public UEdGraphNode
 public:
 
 	virtual void AllocateDefaultPins() override;
+
+	DECLARE_DELEGATE(FInvalidateWidgetEvent);
+	
+	FInvalidateWidgetEvent OnUpdateGraphNode;
 };
