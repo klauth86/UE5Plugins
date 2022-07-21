@@ -52,8 +52,6 @@ public:
 
 	static const FName PC_Exec;
 
-	static const FName PC_Add;
-
 	static const FName PC_Action;
 
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;

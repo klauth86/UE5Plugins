@@ -13,4 +13,18 @@ public:
 	void Construct(const FArguments& InArgs, UEdGraphNode* InNode);
 
 	virtual ~SInputSequenceGraphNode_Press();
+
+	TSharedRef<SWidget> AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip = nullptr);
+
+	virtual void CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox) override;
+
+	virtual FReply OnAddPin() override;
+
+protected:
+
+	TSharedRef<SWidget> OnGetAddButtonMenuContent();
+
+protected:
+
+	TSharedPtr<SComboButton> AddButton;
 };

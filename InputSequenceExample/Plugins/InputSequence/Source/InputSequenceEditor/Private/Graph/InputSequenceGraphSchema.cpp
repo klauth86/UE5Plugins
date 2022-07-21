@@ -10,7 +10,6 @@
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
 #include "Graph/SGraphPin_Action.h"
-#include "Graph/SGraphPin_Add.h"
 #include "SGraphActionMenu.h"
 #include "Classes/EditorStyleSettings.h"
 #include "GameFramework/InputSettings.h"
@@ -180,8 +179,6 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 	{
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Exec) return SNew(SGraphPinExec, InPin);
 
-		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Add) return SNew(SGraphPin_Add, InPin);
-
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Action) return SNew(SGraphPin_Action, InPin);
 	}
 
@@ -204,8 +201,6 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 }
 
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
-
-const FName UInputSequenceGraphSchema::PC_Add = FName("UInputSequenceGraphSchema_PC_Add");
 
 const FName UInputSequenceGraphSchema::PC_Action = FName("UInputSequenceGraphSchema_PC_Action");
 
@@ -264,8 +259,6 @@ void UInputSequenceGraphNode_Press::AllocateDefaultPins()
 {
 	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-
-	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Add, NAME_None);
 }
 
 void UInputSequenceGraphNode_Press::AutowireNewNode(UEdGraphPin* FromPin)
@@ -356,7 +349,6 @@ public:
 	{}
 	//~ Begin Required Args
 	SLATE_ARGUMENT(UEdGraphNode*, Node)
-	SLATE_ARGUMENT(UEdGraphPin*, Pin)
 	//~ End Required Args
 	SLATE_ARGUMENT(bool, AutoExpandMenu)
 	SLATE_END_ARGS();
@@ -364,7 +356,6 @@ public:
 	void Construct(const FArguments& InArgs)
 	{
 		this->Node = InArgs._Node;
-		this->Pin = InArgs._Pin;
 
 		SInputSequenceParameterMenu::FArguments SuperArgs;
 		SuperArgs._AutoExpandMenu = InArgs._AutoExpandMenu;
@@ -420,7 +411,7 @@ protected:
 			for (int32 ActionIndex = 0; ActionIndex < SelectedActions.Num(); ActionIndex++)
 			{
 				FSlateApplication::Get().DismissAllMenus();
-				SelectedActions[ActionIndex]->PerformAction(Node->GetGraph(), Pin, FVector2D::ZeroVector);
+				SelectedActions[ActionIndex]->PerformAction(Node->GetGraph(), Node->FindPin(NAME_None, EGPD_Output), FVector2D::ZeroVector);
 			}
 		}
 	}
@@ -428,21 +419,7 @@ protected:
 private:
 
 	UEdGraphNode* Node;
-	UEdGraphPin* Pin;
 };
-
-TSharedRef<SWidget> SGraphPin_Add::OnGetAddButtonMenuContent()
-{
-	UEdGraphPin* pin = GetPinObj();
-
-	UEdGraphNode* node = pin->GetOwningNode();
-
-	TSharedRef<SInputSequenceParameterMenu_Pin> MenuWidget = SNew(SInputSequenceParameterMenu_Pin).Node(node).Pin(pin);
-
-	AddButton->SetMenuContentWidgetToFocus(MenuWidget->GetSearchBox());
-	
-	return MenuWidget;
-}
 
 void SInputSequenceGraphNode_Press::Construct(const FArguments& InArgs, UEdGraphNode* InNode)
 {
@@ -458,12 +435,93 @@ void SInputSequenceGraphNode_Press::Construct(const FArguments& InArgs, UEdGraph
 	UpdateGraphNode();
 }
 
+TSharedRef<SWidget> SInputSequenceGraphNode_Press::AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip)
+{
+	TSharedPtr<SWidget> ButtonContent;
+	SAssignNew(ButtonContent, SHorizontalBox)
+		+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.HAlign(HAlign_Left)
+		[
+			SNew(STextBlock)
+			.Text(PinText)
+		.ColorAndOpacity(FLinearColor::White)
+		]
+	+ SHorizontalBox::Slot()
+		.AutoWidth()
+		.VAlign(VAlign_Center)
+		.Padding(7, 0, 0, 0)
+		[
+			SNew(SImage)
+			.Image(FEditorStyle::GetBrush(TEXT("Icons.PlusCircle")))
+		];
+
+	TSharedPtr<SToolTip> Tooltip;
+
+	if (CustomTooltip.IsValid())
+	{
+		Tooltip = CustomTooltip;
+	}
+
+	AddButton = SNew(SComboButton)
+		.HasDownArrow(false)
+		.ButtonStyle(FEditorStyle::Get(), "NoBorder")
+		.ForegroundColor(FSlateColor::UseForeground())
+		.OnGetMenuContent(this, &SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent)
+		.ContentPadding(FMargin(2))
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		.ToolTipText(LOCTEXT("AddPinButtonToolTip", "Connect this pin to add a new typed pin, or choose from the drop-down."))
+		.ButtonContent()
+		[
+			ButtonContent.ToSharedRef()
+		];
+
+	AddButton->SetCursor(EMouseCursor::Hand);
+
+	return AddButton.ToSharedRef();
+}
+
+void SInputSequenceGraphNode_Press::CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox)
+{
+	TSharedRef<SWidget> AddPinButton = AddPinButtonContent_Custom(
+		NSLOCTEXT("SwitchStatementNode", "SwitchStatementNodeAddPinButton", "Add pin"),
+		NSLOCTEXT("SwitchStatementNode", "SwitchStatementNodeAddPinButton_Tooltip", "Add new pin"));
+
+	FMargin AddPinPadding = Settings->GetOutputPinPadding();
+	AddPinPadding.Top += 6.0f;
+
+	OutputBox->AddSlot()
+		.AutoHeight()
+		.VAlign(VAlign_Center)
+		.Padding(AddPinPadding)
+		[
+			AddPinButton
+		];
+}
+
+FReply SInputSequenceGraphNode_Press::OnAddPin()
+{
+
+
+	return FReply::Handled();
+}
+
 SInputSequenceGraphNode_Press::~SInputSequenceGraphNode_Press()
 {
 	if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(GraphNode))
 	{
 		pressNode->OnUpdateGraphNode.Unbind();
 	}
+}
+
+TSharedRef<SWidget> SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent()
+{
+	TSharedRef<SInputSequenceParameterMenu_Pin> MenuWidget = SNew(SInputSequenceParameterMenu_Pin).Node(GraphNode);
+
+	AddButton->SetMenuContentWidgetToFocus(MenuWidget->GetSearchBox());
+
+	return MenuWidget;
 }
 
 #undef LOCTEXT_NAMESPACE
