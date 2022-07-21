@@ -14,6 +14,8 @@ public:
 
 	virtual void AllocateDefaultPins() override;
 
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+
 	DECLARE_DELEGATE(FInvalidateWidgetEvent);
 	
 	FInvalidateWidgetEvent OnUpdateGraphNode;

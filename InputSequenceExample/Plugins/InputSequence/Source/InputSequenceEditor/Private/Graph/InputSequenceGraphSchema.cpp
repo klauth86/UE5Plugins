@@ -209,8 +209,6 @@ const FName UInputSequenceGraphSchema::PC_Add = FName("UInputSequenceGraphSchema
 
 const FName UInputSequenceGraphSchema::PC_Action = FName("UInputSequenceGraphSchema_PC_Action");
 
-const FName UInputSequenceGraphSchema::PSC_Hidden = FName("UInputSequenceGraphSchema_PSC_Hidden");
-
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
 	// Add Press state node
@@ -270,19 +268,31 @@ void UInputSequenceGraphNode_Press::AllocateDefaultPins()
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Add, NAME_None);
 }
 
+void UInputSequenceGraphNode_Press::AutowireNewNode(UEdGraphPin* FromPin)
+{
+	if (FromPin && FromPin->PinName == NAME_None)
+	{
+		if (FromPin->Direction == EGPD_Output)
+		{
+			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Input))
+			{
+				GetSchema()->TryCreateConnection(FromPin, OtherPin);
+			}
+		}
+		else
+		{
+			if (UEdGraphPin* OtherPin = FindPin(FromPin->PinName, EGPD_Output))
+			{
+				GetSchema()->TryCreateConnection(FromPin, OtherPin);
+			}
+		}
+	}
+}
+
 void UInputSequenceGraphNode_Release::AllocateDefaultPins()
 {
 	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-}
-
-EVisibility SGraphPin_Add::Visibility_Raw() const
-{
-	if (UInputSequenceGraphSchema::PSC_Hidden == GetPinObj()->PinType.PinSubCategory) return EVisibility::Collapsed;
-
-	if (UseLowDetailPinNames()) return EVisibility::HitTestInvisible;
-
-	return EVisibility::Visible;
 }
 
 class SInputSequenceParameterMenu : public SCompoundWidget

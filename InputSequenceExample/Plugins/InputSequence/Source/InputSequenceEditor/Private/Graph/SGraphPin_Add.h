@@ -14,10 +14,6 @@ class SGraphPin_Add : public SGraphPin
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InGraphPinObj);
 
-protected:
-
-	EVisibility Visibility_Raw() const;
-
 private:
 
 	TSharedRef<SWidget>	ConstructAddButton();
