@@ -6,7 +6,9 @@
 #include "Graph/InputSequenceGraphNode_Finish.h"
 #include "Graph/InputSequenceGraphNode_Press.h"
 #include "Graph/InputSequenceGraphNode_Release.h"
+#include "Graph/SInputSequenceGraphNode_Finish.h"
 #include "Graph/SInputSequenceGraphNode_Press.h"
+#include "Graph/SInputSequenceGraphNode_Start.h"
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
 #include "Graph/SGraphPin_Action.h"
@@ -170,9 +172,19 @@ UEdGraphNode* FInputSequenceGraphSchemaAction_AddPin::PerformAction(class UEdGra
 
 TSharedPtr<SGraphNode> FInputSequenceGraphNodeFactory::CreateNode(UEdGraphNode* InNode) const
 {
+	if (UInputSequenceGraphNode_Finish* stateNode = Cast<UInputSequenceGraphNode_Finish>(InNode))
+	{
+		return SNew(SInputSequenceGraphNode_Finish, stateNode);
+	}
+
 	if (UInputSequenceGraphNode_Press* stateNode = Cast<UInputSequenceGraphNode_Press>(InNode))
 	{
 		return SNew(SInputSequenceGraphNode_Press, stateNode);
+	}
+
+	if (UInputSequenceGraphNode_Start* stateNode = Cast<UInputSequenceGraphNode_Start>(InNode))
+	{
+		return SNew(SInputSequenceGraphNode_Start, stateNode);
 	}
 
 	return nullptr;
@@ -446,6 +458,211 @@ private:
 	UEdGraphNode* Node;
 };
 
+void SInputSequenceGraphNode_Finish::Construct(const FArguments& InArgs, UEdGraphNode* InNode)
+{
+	SetCursor(EMouseCursor::CardinalCross);
+
+	GraphNode = InNode;
+
+	UpdateGraphNode();
+}
+
+void SInputSequenceGraphNode_Finish::UpdateGraphNode()
+{
+	InputPins.Empty();
+	OutputPins.Empty();
+
+	// Reset variables that are going to be exposed, in case we are refreshing an already setup node.
+	RightNodeBox.Reset();
+	LeftNodeBox.Reset();
+
+	//
+	//             ______________________
+	//            |      TITLE AREA      |
+	//            +-------+------+-------+
+	//            | (>) L |      | R (>) |
+	//            | (>) E |      | I (>) |
+	//            | (>) F |      | G (>) |
+	//            | (>) T |      | H (>) |
+	//            |       |      | T (>) |
+	//            |_______|______|_______|
+	//
+	TSharedPtr<SVerticalBox> MainVerticalBox;
+	SetupErrorReporting();
+
+	TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
+
+	// Get node icon
+	IconColor = FLinearColor::White;
+	const FSlateBrush* IconBrush = nullptr;
+	if (GraphNode != NULL && GraphNode->ShowPaletteIconOnNode())
+	{
+		IconBrush = GraphNode->GetIconAndTint(IconColor).GetOptionalIcon();
+	}
+
+	TSharedRef<SOverlay> DefaultTitleAreaWidget =
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SNew(SImage)
+			.Image(FEditorStyle::GetBrush("Graph.Node.TitleGloss"))
+		.ColorAndOpacity(this, &SGraphNode::GetNodeTitleIconColor)
+		]
+	+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Fill)
+		[
+			SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("Graph.Node.ColorSpill"))
+		// The extra margin on the right
+		// is for making the color spill stretch well past the node title
+		.Padding(FMargin(10, 5, 30, 3))
+		.BorderBackgroundColor(FLinearColor::Green)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0.f, 0.f, 4.f, 0.f))
+		.AutoWidth()
+		[
+			SNew(SImage)
+			.Image(IconBrush)
+		.ColorAndOpacity(this, &SGraphNode::GetNodeTitleIconColor)
+		]
+	+ SHorizontalBox::Slot()
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			CreateTitleWidget(NodeTitle)
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			NodeTitle.ToSharedRef()
+		]
+		]
+		]
+		]
+	+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Center)
+		.Padding(0, 0, 5, 0)
+		.AutoWidth()
+		[
+			CreateTitleRightWidget()
+		]
+		]
+	+ SOverlay::Slot()
+		.VAlign(VAlign_Top)
+		[
+			SNew(SBorder)
+			.Visibility(EVisibility::HitTestInvisible)
+		.BorderImage(FEditorStyle::GetBrush("Graph.Node.TitleHighlight"))
+		.BorderBackgroundColor(this, &SGraphNode::GetNodeTitleIconColor)
+		[
+			SNew(SSpacer)
+			.Size(FVector2D(20, 20))
+		]
+		];
+
+	SetDefaultTitleAreaWidget(DefaultTitleAreaWidget);
+
+	TSharedRef<SWidget> TitleAreaWidget =
+		SNew(SLevelOfDetailBranchNode)
+		.UseLowDetailSlot(this, &SInputSequenceGraphNode_Finish::UseLowDetailNodeTitles)
+		.LowDetail()
+		[
+			SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("Graph.Node.ColorSpill"))
+		.Padding(FMargin(75.0f, 22.0f)) // Saving enough space for a 'typical' title so the transition isn't quite so abrupt
+		.BorderBackgroundColor(this, &SGraphNode::GetNodeTitleColor)
+		]
+	.HighDetail()
+		[
+			DefaultTitleAreaWidget
+		];
+
+	TSharedPtr<SVerticalBox> InnerVerticalBox;
+	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
+
+
+	InnerVerticalBox = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			TitleAreaWidget
+		]
+
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		[
+			CreateNodeContentArea()
+		];
+
+	TSharedPtr<SWidget> EnabledStateWidget = GetEnabledStateWidget();
+	if (EnabledStateWidget.IsValid())
+	{
+		InnerVerticalBox->AddSlot()
+			.AutoHeight()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(2, 0))
+			[
+				EnabledStateWidget.ToSharedRef()
+			];
+	}
+
+	InnerVerticalBox->AddSlot()
+		.AutoHeight()
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			ErrorReporting->AsWidget()
+		];
+
+
+
+	this->GetOrAddSlot(ENodeZone::Center)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(MainVerticalBox, SVerticalBox)
+			+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			SNew(SImage)
+			.Image(GetNodeBodyBrush())
+		.ColorAndOpacity(this, &SGraphNode::GetNodeBodyColor)
+		]
+	+ SOverlay::Slot()
+		[
+			InnerVerticalBox.ToSharedRef()
+		]
+		]
+		];
+
+	CreateBelowWidgetControls(MainVerticalBox);
+	CreatePinWidgets();
+	CreateInputSideAddButton(LeftNodeBox);
+	CreateOutputSideAddButton(RightNodeBox);
+	CreateBelowPinControls(InnerVerticalBox);
+	CreateAdvancedViewArrow(InnerVerticalBox);
+}
+
 void SInputSequenceGraphNode_Press::Construct(const FArguments& InArgs, UEdGraphNode* InNode)
 {
 	SetCursor(EMouseCursor::CardinalCross);
@@ -522,7 +739,7 @@ void SInputSequenceGraphNode_Press::UpdateGraphNode()
 				// The extra margin on the right
 				// is for making the color spill stretch well past the node title
 				.Padding( FMargin(10,5,30,3) )
-				.BorderBackgroundColor( this, &SGraphNode::GetNodeTitleColor )
+				.BorderBackgroundColor(FLinearColor::Blue)
 				[
 					SNew(SHorizontalBox)
 					+ SHorizontalBox::Slot()
@@ -654,6 +871,211 @@ void SInputSequenceGraphNode_Press::UpdateGraphNode()
 					InnerVerticalBox.ToSharedRef()
 				]
 			]			
+		];
+
+	CreateBelowWidgetControls(MainVerticalBox);
+	CreatePinWidgets();
+	CreateInputSideAddButton(LeftNodeBox);
+	CreateOutputSideAddButton(RightNodeBox);
+	CreateBelowPinControls(InnerVerticalBox);
+	CreateAdvancedViewArrow(InnerVerticalBox);
+}
+
+void SInputSequenceGraphNode_Start::Construct(const FArguments& InArgs, UEdGraphNode* InNode)
+{
+	SetCursor(EMouseCursor::CardinalCross);
+
+	GraphNode = InNode;
+
+	UpdateGraphNode();
+}
+
+void SInputSequenceGraphNode_Start::UpdateGraphNode()
+{
+	InputPins.Empty();
+	OutputPins.Empty();
+
+	// Reset variables that are going to be exposed, in case we are refreshing an already setup node.
+	RightNodeBox.Reset();
+	LeftNodeBox.Reset();
+
+	//
+	//             ______________________
+	//            |      TITLE AREA      |
+	//            +-------+------+-------+
+	//            | (>) L |      | R (>) |
+	//            | (>) E |      | I (>) |
+	//            | (>) F |      | G (>) |
+	//            | (>) T |      | H (>) |
+	//            |       |      | T (>) |
+	//            |_______|______|_______|
+	//
+	TSharedPtr<SVerticalBox> MainVerticalBox;
+	SetupErrorReporting();
+
+	TSharedPtr<SNodeTitle> NodeTitle = SNew(SNodeTitle, GraphNode);
+
+	// Get node icon
+	IconColor = FLinearColor::White;
+	const FSlateBrush* IconBrush = nullptr;
+	if (GraphNode != NULL && GraphNode->ShowPaletteIconOnNode())
+	{
+		IconBrush = GraphNode->GetIconAndTint(IconColor).GetOptionalIcon();
+	}
+
+	TSharedRef<SOverlay> DefaultTitleAreaWidget =
+		SNew(SOverlay)
+		+ SOverlay::Slot()
+		[
+			SNew(SImage)
+			.Image(FEditorStyle::GetBrush("Graph.Node.TitleGloss"))
+		.ColorAndOpacity(this, &SGraphNode::GetNodeTitleIconColor)
+		]
+	+ SOverlay::Slot()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Center)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Fill)
+		[
+			SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("Graph.Node.ColorSpill"))
+		// The extra margin on the right
+		// is for making the color spill stretch well past the node title
+		.Padding(FMargin(10, 5, 30, 3))
+		.BorderBackgroundColor(FLinearColor::Red)
+		[
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0.f, 0.f, 4.f, 0.f))
+		.AutoWidth()
+		[
+			SNew(SImage)
+			.Image(IconBrush)
+		.ColorAndOpacity(this, &SGraphNode::GetNodeTitleIconColor)
+		]
+	+ SHorizontalBox::Slot()
+		[
+			SNew(SVerticalBox)
+			+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			CreateTitleWidget(NodeTitle)
+		]
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			NodeTitle.ToSharedRef()
+		]
+		]
+		]
+		]
+	+ SHorizontalBox::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Center)
+		.Padding(0, 0, 5, 0)
+		.AutoWidth()
+		[
+			CreateTitleRightWidget()
+		]
+		]
+	+ SOverlay::Slot()
+		.VAlign(VAlign_Top)
+		[
+			SNew(SBorder)
+			.Visibility(EVisibility::HitTestInvisible)
+		.BorderImage(FEditorStyle::GetBrush("Graph.Node.TitleHighlight"))
+		.BorderBackgroundColor(this, &SGraphNode::GetNodeTitleIconColor)
+		[
+			SNew(SSpacer)
+			.Size(FVector2D(20, 20))
+		]
+		];
+
+	SetDefaultTitleAreaWidget(DefaultTitleAreaWidget);
+
+	TSharedRef<SWidget> TitleAreaWidget =
+		SNew(SLevelOfDetailBranchNode)
+		.UseLowDetailSlot(this, &SInputSequenceGraphNode_Start::UseLowDetailNodeTitles)
+		.LowDetail()
+		[
+			SNew(SBorder)
+			.BorderImage(FEditorStyle::GetBrush("Graph.Node.ColorSpill"))
+		.Padding(FMargin(75.0f, 22.0f)) // Saving enough space for a 'typical' title so the transition isn't quite so abrupt
+		.BorderBackgroundColor(this, &SGraphNode::GetNodeTitleColor)
+		]
+	.HighDetail()
+		[
+			DefaultTitleAreaWidget
+		];
+
+	TSharedPtr<SVerticalBox> InnerVerticalBox;
+	this->ContentScale.Bind(this, &SGraphNode::GetContentScale);
+
+
+	InnerVerticalBox = SNew(SVerticalBox)
+		+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			TitleAreaWidget
+		]
+
+	+ SVerticalBox::Slot()
+		.AutoHeight()
+		.HAlign(HAlign_Fill)
+		.VAlign(VAlign_Top)
+		[
+			CreateNodeContentArea()
+		];
+
+	TSharedPtr<SWidget> EnabledStateWidget = GetEnabledStateWidget();
+	if (EnabledStateWidget.IsValid())
+	{
+		InnerVerticalBox->AddSlot()
+			.AutoHeight()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			.Padding(FMargin(2, 0))
+			[
+				EnabledStateWidget.ToSharedRef()
+			];
+	}
+
+	InnerVerticalBox->AddSlot()
+		.AutoHeight()
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			ErrorReporting->AsWidget()
+		];
+
+
+
+	this->GetOrAddSlot(ENodeZone::Center)
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			SAssignNew(MainVerticalBox, SVerticalBox)
+			+ SVerticalBox::Slot()
+		.AutoHeight()
+		[
+			SNew(SOverlay)
+			+ SOverlay::Slot()
+		.Padding(Settings->GetNonPinNodeBodyPadding())
+		[
+			SNew(SImage)
+			.Image(GetNodeBodyBrush())
+		.ColorAndOpacity(this, &SGraphNode::GetNodeBodyColor)
+		]
+	+ SOverlay::Slot()
+		[
+			InnerVerticalBox.ToSharedRef()
+		]
+		]
 		];
 
 	CreateBelowWidgetControls(MainVerticalBox);
