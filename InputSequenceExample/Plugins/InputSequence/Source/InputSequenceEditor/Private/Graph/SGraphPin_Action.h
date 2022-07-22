@@ -20,7 +20,11 @@ protected:
 
 	EVisibility Visibility_Raw_ArrowUp() const;
 
+	FText ToolTipText_Raw_RemovePin() const;
+
 	FReply OnClicked_Raw_RemovePin() const;
+
+	FText ToolTipText_Raw_TogglePin() const;
 
 	FReply OnClicked_Raw_TogglePin() const;
 };

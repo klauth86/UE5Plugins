@@ -134,7 +134,7 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 			.VAlign(VAlign_Center)
 			.Padding(0, 0, InArgs._SideToSideMargin, 0)
 			[
-				SNew(SButton)
+				SNew(SButton).ToolTipText_Raw(this, &SGraphPin_Action::ToolTipText_Raw_RemovePin)
 				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
 				.ForegroundColor(FSlateColor::UseForeground())
 				.OnClicked_Raw(this, &SGraphPin_Action::OnClicked_Raw_RemovePin)
@@ -154,7 +154,7 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 			.VAlign(VAlign_Center)
 			.Padding(0, 0, InArgs._SideToSideMargin, 0)
 			[
-				SNew(SButton)
+				SNew(SButton).ToolTipText_Raw(this, &SGraphPin_Action::ToolTipText_Raw_TogglePin)
 				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
 				.ForegroundColor(FSlateColor::UseForeground())
 				.OnClicked_Raw(this, &SGraphPin_Action::OnClicked_Raw_TogglePin)
@@ -188,9 +188,4 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 			]
 		]
 	);
-
-	TSharedPtr<IToolTip> TooltipWidget = SNew(SToolTip)
-		.Text(this, &SGraphPin_Action::GetTooltipText);
-
-	SetToolTip(TooltipWidget);
 }
