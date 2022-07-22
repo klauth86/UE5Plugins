@@ -10,6 +10,7 @@
 #include "Graph/InputSequenceGraphFactories.h"
 #include "KismetPins/SGraphPinExec.h"
 #include "Graph/SGraphPin_Action.h"
+#include "Graph/SGraphPin_Add.h"
 #include "SGraphActionMenu.h"
 #include "Classes/EditorStyleSettings.h"
 #include "GameFramework/InputSettings.h"
@@ -180,6 +181,8 @@ TSharedPtr<SGraphPin> FInputSequenceGraphPinFactory::CreatePin(UEdGraphPin* InPi
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Exec) return SNew(SGraphPinExec, InPin);
 
 		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Action) return SNew(SGraphPin_Action, InPin);
+
+		if (InPin->PinType.PinCategory == UInputSequenceGraphSchema::PC_Add) return SNew(SGraphPin_Add, InPin);
 	}
 
 	return nullptr;
@@ -203,6 +206,8 @@ UInputSequenceGraph::UInputSequenceGraph(const FObjectInitializer& ObjectInitial
 const FName UInputSequenceGraphSchema::PC_Exec = FName("UInputSequenceGraphSchema_PC_Exec");
 
 const FName UInputSequenceGraphSchema::PC_Action = FName("UInputSequenceGraphSchema_PC_Action");
+
+const FName UInputSequenceGraphSchema::PC_Add = FName("UInputSequenceGraphSchema_PC_Add");
 
 void UInputSequenceGraphSchema::GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const
 {
@@ -264,6 +269,8 @@ void UInputSequenceGraphNode_Press::AllocateDefaultPins()
 {
 	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+
+	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Add, "Add new Action pin");
 }
 
 void UInputSequenceGraphNode_Release::AllocateDefaultPins()
@@ -457,67 +464,9 @@ SInputSequenceGraphNode_Press::~SInputSequenceGraphNode_Press()
 	}
 }
 
-void SInputSequenceGraphNode_Press::CreateOutputSideAddButton(TSharedPtr<SVerticalBox> OutputBox)
+TSharedRef<SWidget> SGraphPin_Add::OnGetAddButtonMenuContent()
 {
-	TSharedRef<SWidget> AddPinButton = AddPinButtonContent_Custom(
-		NSLOCTEXT("SwitchStatementNode", "SwitchStatementNodeAddPinButton", "Add pin"),
-		NSLOCTEXT("SwitchStatementNode", "SwitchStatementNodeAddPinButton_Tooltip", "Add new pin"));
-
-	FMargin AddPinPadding = Settings->GetOutputPinPadding();
-	AddPinPadding.Top += 6.0f;
-
-	OutputBox->AddSlot()
-		.AutoHeight()
-		.VAlign(VAlign_Center)
-		.Padding(AddPinPadding)
-		[
-			AddPinButton
-		];
-}
-
-TSharedRef<SWidget> SInputSequenceGraphNode_Press::AddPinButtonContent_Custom(FText PinText, FText PinTooltipText, TSharedPtr<SToolTip> CustomTooltip)
-{
-	TSharedPtr<SWidget> ButtonContent;
-	SAssignNew(ButtonContent, SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.HAlign(HAlign_Left)
-		[
-			SNew(STextBlock).Text(PinText).ColorAndOpacity(FLinearColor::White)
-		]
-	+ SHorizontalBox::Slot()
-		.AutoWidth()
-		.VAlign(VAlign_Center)
-		.Padding(7, 0, 0, 0)
-		[
-			SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("Icons.PlusCircle")))
-		];
-
-	TSharedPtr<SToolTip> Tooltip;
-	if (CustomTooltip.IsValid()) Tooltip = CustomTooltip;
-
-	AddButton = SNew(SComboButton)
-		.HasDownArrow(false)
-		.ButtonStyle(FEditorStyle::Get(), "NoBorder")
-		.ForegroundColor(FSlateColor::UseForeground())
-		.OnGetMenuContent(this, &SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent)
-		.ContentPadding(FMargin(2))
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.ToolTipText(LOCTEXT("AddPinButtonToolTip", "Connect this pin to add a new typed pin, or choose from the drop-down."))
-		.ButtonContent()
-		[
-			ButtonContent.ToSharedRef()
-		];
-
-	AddButton->SetCursor(EMouseCursor::Hand);
-
-	return AddButton.ToSharedRef();
-}
-
-TSharedRef<SWidget> SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent()
-{
-	TSharedRef<SInputSequenceParameterMenu_Pin> MenuWidget = SNew(SInputSequenceParameterMenu_Pin).Node(GraphNode);
+	TSharedRef<SInputSequenceParameterMenu_Pin> MenuWidget = SNew(SInputSequenceParameterMenu_Pin).Node(GetPinObj()->GetOwningNode());
 
 	AddButton->SetMenuContentWidgetToFocus(MenuWidget->GetSearchBox());
 
@@ -576,8 +525,8 @@ FText SGraphPin_Action::ToolTipText_Raw_TogglePin() const
 	if (UEdGraphPin* FromPin = GetPinObj())
 	{
 		return FromPin->HasAnyConnections()
-			? LOCTEXT("RemovePin_Tooltip_Error", "Toggle to Action Click")
-			: LOCTEXT("RemovePin_Tooltip_Error", "Toggle to Action Press");
+			? LOCTEXT("RemovePin_Tooltip_Click", "Toggle to Action CLICK")
+			: LOCTEXT("RemovePin_Tooltip_Press", "Toggle to Action PRESS");
 	}
 
 	return LOCTEXT("RemovePin_Tooltip_Error", "Invalid pin object");

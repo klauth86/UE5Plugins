@@ -54,6 +54,8 @@ public:
 
 	static const FName PC_Action;
 
+	static const FName PC_Add;
+
 	virtual void GetGraphContextActions(FGraphContextMenuBuilder& ContextMenuBuilder) const override;
 
 	virtual const FPinConnectionResponse CanCreateConnection(const UEdGraphPin* pinA, const UEdGraphPin* pinB) const override;
