@@ -14,7 +14,11 @@ public:
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin);
 
+	virtual FSlateColor GetPinTextColor() const override;
+
 protected:
+
+	FText ToolTipText_Raw_Label() const;
 
 	EVisibility Visibility_Raw_SelfPin() const;
 

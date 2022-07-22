@@ -89,6 +89,7 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 		];
 
 	TSharedRef<SWidget> LabelWidget = GetLabelWidget(InArgs._PinLabelStyle);
+	LabelWidget->SetToolTipText(MakeAttributeRaw(this, &SGraphPin_Action::ToolTipText_Raw_Label));
 
 	// Create the widget used for the pin body (status indicator, label, and value)
 	LabelAndValue =

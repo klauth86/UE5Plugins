@@ -473,6 +473,76 @@ TSharedRef<SWidget> SGraphPin_Add::OnGetAddButtonMenuContent()
 	return MenuWidget;
 }
 
+FSlateColor SGraphPin_Action::GetPinTextColor() const
+{
+	UEdGraphPin* GraphPin = GetPinObj();
+
+	////// TODO At tthe moment implementation is not very eefective
+	////// But this code is only for Editor, so is not a big deal
+
+	bool isFoundInActionMappings = false;
+
+	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
+	
+	for (const FInputActionKeyMapping& actionMapping : actionMappings)
+	{
+		if (GraphPin->PinName == actionMapping.ActionName)
+		{
+			isFoundInActionMappings = true;
+			break;
+		}
+	}
+
+	if (!isFoundInActionMappings) return FLinearColor::Red;
+
+	if (GraphPin)
+
+		// If there is no schema there is no owning node (or basically this is a deleted node)
+		if (UEdGraphNode* GraphNode = GraphPin ? GraphPin->GetOwningNodeUnchecked() : nullptr)
+		{
+			const bool bDisabled = (!GraphNode->IsNodeEnabled() || GraphNode->IsDisplayAsDisabledForced() || !IsEditingEnabled() || GraphNode->IsNodeUnrelated());
+			if (GraphPin->bOrphanedPin)
+			{
+				FLinearColor PinColor = FLinearColor::Red;
+				if (bDisabled)
+				{
+					PinColor.A = .25f;
+				}
+				return PinColor;
+			}
+			else if (bDisabled)
+			{
+				return FLinearColor(1.0f, 1.0f, 1.0f, 0.5f);
+			}
+			if (bUsePinColorForText)
+			{
+				return GetPinColor();
+			}
+		}
+
+	return FLinearColor::White;
+}
+
+FText SGraphPin_Action::ToolTipText_Raw_Label() const
+{
+	UEdGraphPin* GraphPin = GetPinObj();
+
+	////// TODO At tthe moment implementation is not very eefective
+	////// But this code is only for Editor, so is not a big deal
+
+	const TArray<FInputActionKeyMapping>& actionMappings = UInputSettings::GetInputSettings()->GetActionMappings();
+
+	for (const FInputActionKeyMapping& actionMapping : actionMappings)
+	{
+		if (GraphPin->PinName == actionMapping.ActionName)
+		{
+			return FText::GetEmpty();
+		}
+	}
+
+	return LOCTEXT("Label_TootTip_Error", "Cant find corresponding Action name in Input Settings!");
+}
+
 EVisibility SGraphPin_Action::Visibility_Raw_SelfPin() const
 {
 	if (UEdGraphPin* pin = GetPinObj())
@@ -529,7 +599,7 @@ FText SGraphPin_Action::ToolTipText_Raw_TogglePin() const
 			: LOCTEXT("RemovePin_Tooltip_Press", "Click to set PRESS mode");
 	}
 
-	return LOCTEXT("RemovePin_Tooltip_Error", "Invalid pin object");
+	return LOCTEXT("RemovePin_Tooltip_Error", "Invalid pin object!");
 }
 
 FReply SGraphPin_Action::OnClicked_Raw_TogglePin() const
