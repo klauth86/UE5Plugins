@@ -230,6 +230,11 @@ const FPinConnectionResponse UInputSequenceGraphSchema::CanCreateConnection(cons
 	return FPinConnectionResponse(CONNECT_RESPONSE_BREAK_OTHERS_AB, TEXT(""));
 }
 
+void UInputSequenceGraphSchema::BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotifcation) const
+{
+	if (TargetPin.PinName == NAME_None) UEdGraphSchema::BreakPinLinks(TargetPin, bSendsNodeNotifcation);
+}
+
 void UInputSequenceGraphSchema::CreateDefaultNodesForGraph(UEdGraph& Graph) const
 {
 	FGraphNodeCreator<UInputSequenceGraphNode_Start> startNodeCreator(Graph);
@@ -261,6 +266,21 @@ void UInputSequenceGraphNode_Press::AllocateDefaultPins()
 	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 }
 
+void UInputSequenceGraphNode_Release::AllocateDefaultPins()
+{
+	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
+}
+
+void UInputSequenceGraphNode_Release::AutowireNewNode(UEdGraphPin* FromPin)
+{
+	if (FromPin->Direction == EGPD_Output && FromPin && FromPin->PinName != NAME_None)
+	{
+		UEdGraphPin* OtherPin = CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Action, FromPin->PinName);
+		GetSchema()->TryCreateConnection(FromPin, OtherPin);
+	}
+}
+
 void UInputSequenceGraphNode_Press::AutowireNewNode(UEdGraphPin* FromPin)
 {
 	if (FromPin && FromPin->PinName == NAME_None)
@@ -280,12 +300,6 @@ void UInputSequenceGraphNode_Press::AutowireNewNode(UEdGraphPin* FromPin)
 			}
 		}
 	}
-}
-
-void UInputSequenceGraphNode_Release::AllocateDefaultPins()
-{
-	CreatePin(EGPD_Input, UInputSequenceGraphSchema::PC_Exec, NAME_None);
-	CreatePin(EGPD_Output, UInputSequenceGraphSchema::PC_Exec, NAME_None);
 }
 
 class SInputSequenceParameterMenu : public SCompoundWidget
@@ -508,6 +522,70 @@ TSharedRef<SWidget> SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent()
 	AddButton->SetMenuContentWidgetToFocus(MenuWidget->GetSearchBox());
 
 	return MenuWidget;
+}
+
+FReply SGraphPin_Action::OnClicked_Raw() const
+{
+	if (UEdGraphPin* FromPin = GetPinObj())
+	{
+		if (FromPin->HasAnyConnections())
+		{
+			UEdGraphNode* linkedNode = FromPin->LinkedTo[0]->GetOwningNode();
+			linkedNode->DestroyNode();
+		}
+		else
+		{
+			UEdGraphNode* FromNode = FromPin->GetOwningNode();
+			
+			UEdGraph* ParentGraph = FromNode->GetGraph();
+
+			const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddNode", "Add Node"));
+			
+			ParentGraph->Modify();
+			if (FromPin)
+			{
+				FromPin->Modify();
+			}
+
+			// set outer to be the graph so it doesn't go away
+			UEdGraphNode* ResultNode = NewObject<UInputSequenceGraphNode_Release>(ParentGraph);
+			ParentGraph->AddNode(ResultNode, true, false);
+
+			ResultNode->CreateNewGuid();
+			ResultNode->PostPlacedNewNode();
+			ResultNode->AllocateDefaultPins();
+			ResultNode->AutowireNewNode(FromPin);
+
+			ResultNode->NodePosX = FromNode->NodePosX + 300;
+			ResultNode->NodePosY = FromNode->NodePosY;
+
+			ResultNode->SnapToGrid(GetDefault<UEditorStyleSettings>()->GridSnapSize);;
+
+			ResultNode->SetFlags(RF_Transactional);
+		}
+	}
+
+	return FReply::Handled();
+}
+
+EVisibility SGraphPin_Action::Visibility_Raw_SelfPin() const
+{
+	if (UEdGraphPin* pin = GetPinObj())
+	{
+		return pin->HasAnyConnections() ? EVisibility::Visible : EVisibility::Hidden;
+	}
+
+	return EVisibility::Hidden;
+}
+
+EVisibility SGraphPin_Action::Visibility_Raw_ArrowUp() const
+{
+	if (UEdGraphPin* pin = GetPinObj())
+	{
+		return pin->HasAnyConnections() ? EVisibility::Hidden : EVisibility::Visible;
+	}
+
+	return EVisibility::Visible;
 }
 
 #undef LOCTEXT_NAMESPACE

@@ -13,4 +13,6 @@ class UInputSequenceGraphNode_Release : public UEdGraphNode
 public:
 
 	virtual void AllocateDefaultPins() override;
+
+	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
 };

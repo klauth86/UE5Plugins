@@ -13,4 +13,12 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs, UEdGraphPin* InPin);
+
+protected:
+
+	EVisibility Visibility_Raw_SelfPin() const;
+
+	EVisibility Visibility_Raw_ArrowUp() const;
+
+	FReply OnClicked_Raw() const;
 };

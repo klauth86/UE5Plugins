@@ -60,5 +60,7 @@ public:
 
 	virtual FLinearColor GetPinTypeColor(const FEdGraphPinType& PinType) const override { return FLinearColor::White; }
 
+	virtual void BreakPinLinks(UEdGraphPin& TargetPin, bool bSendsNodeNotifcation) const override;
+
 	virtual void CreateDefaultNodesForGraph(UEdGraph& Graph) const override;
 };
