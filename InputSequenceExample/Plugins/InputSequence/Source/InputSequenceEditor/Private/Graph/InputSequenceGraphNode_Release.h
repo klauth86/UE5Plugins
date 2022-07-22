@@ -15,4 +15,6 @@ public:
 	virtual void AllocateDefaultPins() override;
 
 	virtual void AutowireNewNode(UEdGraphPin* FromPin) override;
+
+	virtual bool CanUserDeleteNode() const override { return false; }
 };

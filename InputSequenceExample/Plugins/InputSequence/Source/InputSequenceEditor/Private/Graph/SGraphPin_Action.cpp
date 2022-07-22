@@ -5,12 +5,36 @@
 #include "SLevelOfDetailBranchNode.h"
 #include "Widgets/Layout/SWrapBox.h"
 
+#define LOCTEXT_NAMESPACE "SGraphPin_Action"
+
+class SToolTip_Mock : public SLeafWidget, public IToolTip
+{
+public:
+
+	SLATE_BEGIN_ARGS(SToolTip_Mock)	{}
+	SLATE_END_ARGS()
+
+	void Construct(const FArguments& InArgs) {}
+
+	virtual int32 OnPaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect, FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override { return LayerId; }
+	virtual FVector2D ComputeDesiredSize(float) const override { return FVector2D::ZeroVector; }
+
+	virtual TSharedRef<class SWidget> AsWidget() { return SNullWidget::NullWidget; }
+	virtual TSharedRef<SWidget> GetContentWidget() { return SNullWidget::NullWidget; }
+	virtual void SetContentWidget(const TSharedRef<SWidget>& InContentWidget) override {}
+	virtual bool IsEmpty() const override { return false; }
+	virtual bool IsInteractive() const { return false; }
+	virtual void OnOpening() override {}
+	virtual void OnClosed() override {}
+};
+
 void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 {
 	SGraphPin::FArguments InArgs = SGraphPin::FArguments();
 
 	bUsePinColorForText = InArgs._UsePinColorForText;
 	this->SetCursor(EMouseCursor::Default);
+	this->SetToolTipText(LOCTEXT("ActionPin_ToolTip", "Mock ToolTip"));
 
 	SetVisibility(MakeAttributeSP(this, &SGraphPin_Action::GetPinVisiblity));
 
@@ -190,4 +214,8 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 			]
 		]
 	);
+
+	SetToolTip(SNew(SToolTip_Mock));
 }
+
+#undef LOCTEXT_NAMESPACE

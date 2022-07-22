@@ -13,6 +13,7 @@ void SGraphPin_Add::Construct(const FArguments& Args, UEdGraphPin* InPin)
 
 	bUsePinColorForText = InArgs._UsePinColorForText;
 	this->SetCursor(EMouseCursor::Hand);
+	this->SetToolTipText(LOCTEXT("AddPin_ToolTip", "Click to add new Action pin"));
 
 	SetVisibility(MakeAttributeSP(this, &SGraphPin_Add::GetPinVisiblity));
 
@@ -91,7 +92,6 @@ void SGraphPin_Add::Construct(const FArguments& Args, UEdGraphPin* InPin)
 		.OnGetMenuContent(this, &SGraphPin_Add::OnGetAddButtonMenuContent)
 		.HAlign(HAlign_Center)
 		.VAlign(VAlign_Center)
-		.ToolTipText(LOCTEXT("AddPin_ToolTip", "Click to add new Action pin"))
 		.ButtonContent()
 		[
 			PinContent.ToSharedRef()

@@ -493,7 +493,7 @@ EVisibility SGraphPin_Action::Visibility_Raw_ArrowUp() const
 	return EVisibility::Visible;
 }
 
-FText SGraphPin_Action::ToolTipText_Raw_RemovePin() const { return LOCTEXT("RemovePin_Tooltip", "Remove Action pin"); }
+FText SGraphPin_Action::ToolTipText_Raw_RemovePin() const { return LOCTEXT("RemovePin_Tooltip", "Click to remove Action pin"); }
 
 FReply SGraphPin_Action::OnClicked_Raw_RemovePin() const
 {
@@ -525,8 +525,8 @@ FText SGraphPin_Action::ToolTipText_Raw_TogglePin() const
 	if (UEdGraphPin* FromPin = GetPinObj())
 	{
 		return FromPin->HasAnyConnections()
-			? LOCTEXT("RemovePin_Tooltip_Click", "Toggle to Action CLICK")
-			: LOCTEXT("RemovePin_Tooltip_Press", "Toggle to Action PRESS");
+			? LOCTEXT("RemovePin_Tooltip_Click", "Click to set CLICK mode")
+			: LOCTEXT("RemovePin_Tooltip_Press", "Click to set PRESS mode");
 	}
 
 	return LOCTEXT("RemovePin_Tooltip_Error", "Invalid pin object");
