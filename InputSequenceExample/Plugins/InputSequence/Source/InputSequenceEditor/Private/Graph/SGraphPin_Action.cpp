@@ -134,6 +134,19 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 			.VAlign(VAlign_Center)
 			.Padding(0, 0, InArgs._SideToSideMargin, 0)
 			[
+				SNew(SButton)
+				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
+				.ForegroundColor(FSlateColor::UseForeground())
+				.OnClicked_Raw(this, &SGraphPin_Action::OnClicked_Raw_RemovePin)
+				[
+					SNew(SImage).Image(FEditorStyle::GetBrush("Cross"))
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.AutoWidth()
+			.VAlign(VAlign_Center)
+			.Padding(0, 0, InArgs._SideToSideMargin, 0)
+			[
 				LabelAndValue.ToSharedRef()
 			]
 		+ SHorizontalBox::Slot()
@@ -144,7 +157,7 @@ void SGraphPin_Action::Construct(const FArguments& Args, UEdGraphPin* InPin)
 				SNew(SButton)
 				.ButtonStyle(FEditorStyle::Get(), "NoBorder")
 				.ForegroundColor(FSlateColor::UseForeground())
-				.OnClicked_Raw(this, &SGraphPin_Action::OnClicked_Raw)
+				.OnClicked_Raw(this, &SGraphPin_Action::OnClicked_Raw_TogglePin)
 				[
 					SNew(SImage).Image(FEditorStyle::GetBrush(TEXT("Icons.CircleArrowDown")))
 				]

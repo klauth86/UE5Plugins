@@ -524,7 +524,52 @@ TSharedRef<SWidget> SInputSequenceGraphNode_Press::OnGetAddButtonMenuContent()
 	return MenuWidget;
 }
 
-FReply SGraphPin_Action::OnClicked_Raw() const
+EVisibility SGraphPin_Action::Visibility_Raw_SelfPin() const
+{
+	if (UEdGraphPin* pin = GetPinObj())
+	{
+		return pin->HasAnyConnections() ? EVisibility::Visible : EVisibility::Hidden;
+	}
+
+	return EVisibility::Hidden;
+}
+
+EVisibility SGraphPin_Action::Visibility_Raw_ArrowUp() const
+{
+	if (UEdGraphPin* pin = GetPinObj())
+	{
+		return pin->HasAnyConnections() ? EVisibility::Hidden : EVisibility::Visible;
+	}
+
+	return EVisibility::Visible;
+}
+
+FReply SGraphPin_Action::OnClicked_Raw_RemovePin() const
+{
+	if (UEdGraphPin* FromPin = GetPinObj())
+	{
+		if (FromPin->HasAnyConnections())
+		{
+			UEdGraphNode* linkedNode = FromPin->LinkedTo[0]->GetOwningNode();
+			linkedNode->DestroyNode();
+		}
+
+		UEdGraphNode* FromNode = FromPin->GetOwningNode();
+
+		FromNode->RemovePin(FromPin);
+
+		FromNode->Modify();
+
+		if (UInputSequenceGraphNode_Press* pressNode = Cast<UInputSequenceGraphNode_Press>(FromNode))
+		{
+			pressNode->OnUpdateGraphNode.ExecuteIfBound();
+		}
+	}
+
+	return FReply::Handled();
+}
+
+FReply SGraphPin_Action::OnClicked_Raw_TogglePin() const
 {
 	if (UEdGraphPin* FromPin = GetPinObj())
 	{
@@ -536,11 +581,11 @@ FReply SGraphPin_Action::OnClicked_Raw() const
 		else
 		{
 			UEdGraphNode* FromNode = FromPin->GetOwningNode();
-			
+
 			UEdGraph* ParentGraph = FromNode->GetGraph();
 
 			const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddNode", "Add Node"));
-			
+
 			ParentGraph->Modify();
 			if (FromPin)
 			{
@@ -566,26 +611,6 @@ FReply SGraphPin_Action::OnClicked_Raw() const
 	}
 
 	return FReply::Handled();
-}
-
-EVisibility SGraphPin_Action::Visibility_Raw_SelfPin() const
-{
-	if (UEdGraphPin* pin = GetPinObj())
-	{
-		return pin->HasAnyConnections() ? EVisibility::Visible : EVisibility::Hidden;
-	}
-
-	return EVisibility::Hidden;
-}
-
-EVisibility SGraphPin_Action::Visibility_Raw_ArrowUp() const
-{
-	if (UEdGraphPin* pin = GetPinObj())
-	{
-		return pin->HasAnyConnections() ? EVisibility::Hidden : EVisibility::Visible;
-	}
-
-	return EVisibility::Visible;
 }
 
 #undef LOCTEXT_NAMESPACE

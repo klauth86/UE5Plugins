@@ -20,5 +20,7 @@ protected:
 
 	EVisibility Visibility_Raw_ArrowUp() const;
 
-	FReply OnClicked_Raw() const;
+	FReply OnClicked_Raw_RemovePin() const;
+
+	FReply OnClicked_Raw_TogglePin() const;
 };
