@@ -36,6 +36,38 @@ protected:
 
 	void OnSelectionChanged(const TSet<UObject*>& selectedNodes);
 
+	FGraphPanelSelectionSet GetSelectedNodes() const;
+
+	void SelectAllNodes();
+
+	bool CanSelectAllNodes() const { return true; }
+
+	void DeleteSelectedNodes();
+
+	bool CanDeleteNodes() const;
+	
+	void CopySelectedNodes();
+
+	bool CanCopyNodes() const;
+
+	void DeleteSelectedDuplicatableNodes();
+
+	void CutSelectedNodes() { CopySelectedNodes(); DeleteSelectedDuplicatableNodes(); }
+
+	bool CanCutNodes() const { return CanCopyNodes() && CanDeleteNodes(); }
+
+	void PasteNodes();
+
+	bool CanPasteNodes() const;
+
+	void DuplicateNodes() { CopySelectedNodes(); PasteNodes(); }
+
+	bool CanDuplicateNodes() const { return CanCopyNodes(); }
+
+	void OnCreateComment();
+
+	bool CanCreateComment() const;
+
 protected:
 
 	UInputSequenceAsset* InputSequenceAsset;

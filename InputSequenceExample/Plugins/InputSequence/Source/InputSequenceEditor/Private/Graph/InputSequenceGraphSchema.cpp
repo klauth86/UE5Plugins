@@ -6,8 +6,8 @@
 #include "Graph/InputSequenceGraphNode_Finish.h"
 #include "Graph/InputSequenceGraphNode_Press.h"
 #include "Graph/InputSequenceGraphNode_Release.h"
-#include "Graph/SInputSequenceGraphNode_Press.h"
 #include "Graph/InputSequenceGraphFactories.h"
+#include "Graph/SInputSequenceGraphNode_Press.h"
 #include "KismetPins/SGraphPinExec.h"
 #include "Graph/SGraphPin_Action.h"
 #include "Graph/SGraphPin_Add.h"
@@ -18,6 +18,12 @@
 #include "SPinTypeSelector.h"
 #include "SLevelOfDetailBranchNode.h"
 #include "Widgets/Layout/SWrapBox.h"
+#include "EdGraphUtilities.h"
+#include "HAL/PlatformApplicationMisc.h"
+#include "Framework/Commands/GenericCommands.h"
+#include "GraphEditorActions.h"
+#include "InputSequenceAsset.h"
+#include "InputSequenceAssetEditor.h"
 
 #pragma region UInputSequenceGraphSchema
 #define LOCTEXT_NAMESPACE "UInputSequenceGraphSchema"
@@ -931,6 +937,7 @@ FReply SGraphPin_Action::OnClicked_Raw_RemovePin() const
 		if (FromPin->HasAnyConnections())
 		{
 			UEdGraphNode* linkedNode = FromPin->LinkedTo[0]->GetOwningNode();
+			linkedNode->Modify();
 			linkedNode->DestroyNode();
 		}
 
@@ -968,6 +975,7 @@ FReply SGraphPin_Action::OnClicked_Raw_TogglePin() const
 		if (FromPin->HasAnyConnections())
 		{
 			UEdGraphNode* linkedNode = FromPin->LinkedTo[0]->GetOwningNode();
+			linkedNode->Modify();
 			linkedNode->DestroyNode();
 		}
 		else
@@ -979,6 +987,7 @@ FReply SGraphPin_Action::OnClicked_Raw_TogglePin() const
 			const FScopedTransaction Transaction(NSLOCTEXT("UnrealEd", "K2_AddNode", "Add Node"));
 
 			ParentGraph->Modify();
+			
 			if (FromPin)
 			{
 				FromPin->Modify();
@@ -1003,6 +1012,432 @@ FReply SGraphPin_Action::OnClicked_Raw_TogglePin() const
 	}
 
 	return FReply::Handled();
+}
+
+#undef LOCTEXT_NAMESPACE
+#pragma endregion
+
+#pragma region FInputSequenceAssetEditor
+#define LOCTEXT_NAMESPACE "FInputSequenceAssetEditor"
+
+const FName FInputSequenceAssetEditor::AppIdentifier(TEXT("FInputSequenceAssetEditor_AppIdentifier"));
+const FName FInputSequenceAssetEditor::DetailsTabId(TEXT("FInputSequenceAssetEditor_DetailsTab_Id"));
+const FName FInputSequenceAssetEditor::GraphTabId(TEXT("FInputSequenceAssetEditor_GraphTab_Id"));
+
+void FInputSequenceAssetEditor::InitAssetEditor(const EToolkitMode::Type Mode, const TSharedPtr< class IToolkitHost >& InitToolkitHost, UInputSequenceAsset* inputSequenceAsset)
+{
+	check(inputSequenceAsset != NULL);
+
+	InputSequenceAsset = inputSequenceAsset;
+
+	InputSequenceAsset->SetFlags(RF_Transactional);
+
+	TSharedRef<FTabManager::FLayout> StandaloneDefaultLayout = FTabManager::NewLayout("FInputSequenceAssetEditor_StandaloneDefaultLayout")
+		->AddArea
+		(
+			FTabManager::NewPrimaryArea()->SetOrientation(Orient_Vertical)
+			->Split
+			(
+				FTabManager::NewStack()
+				->SetSizeCoefficient(0.1f)
+				->SetHideTabWell(true)
+			)
+			->Split
+			(
+				FTabManager::NewSplitter()->SetOrientation(Orient_Horizontal)
+				->Split
+				(
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.3f)
+					->AddTab(DetailsTabId, ETabState::OpenedTab)
+					->SetHideTabWell(true)
+				)
+				->Split
+				(
+					FTabManager::NewStack()
+					->SetSizeCoefficient(0.7f)
+					->AddTab(GraphTabId, ETabState::OpenedTab)
+					->SetHideTabWell(true)
+				)
+			)
+		);
+
+	FAssetEditorToolkit::InitAssetEditor(Mode, InitToolkitHost, AppIdentifier, StandaloneDefaultLayout, true, true, InputSequenceAsset);
+}
+
+void FInputSequenceAssetEditor::RegisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
+{
+	WorkspaceMenuCategory = InTabManager->AddLocalWorkspaceMenuCategory(LOCTEXT("WorkspaceMenuCategory", "Input Sequence Asset Editor"));
+	TSharedRef<FWorkspaceItem> WorkspaceMenuCategoryRef = WorkspaceMenuCategory.ToSharedRef();
+
+	FAssetEditorToolkit::RegisterTabSpawners(InTabManager);
+
+	InTabManager->RegisterTabSpawner(DetailsTabId, FOnSpawnTab::CreateSP(this, &FInputSequenceAssetEditor::SpawnTab_DetailsTab))
+		.SetDisplayName(LOCTEXT("DetailsTab_DisplayName", "Details"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "LevelEditor.Tabs.Details"));
+
+	InTabManager->RegisterTabSpawner(GraphTabId, FOnSpawnTab::CreateSP(this, &FInputSequenceAssetEditor::SpawnTab_GraphTab))
+		.SetDisplayName(LOCTEXT("GraphTab_DisplayName", "Graph"))
+		.SetGroup(WorkspaceMenuCategoryRef)
+		.SetIcon(FSlateIcon(FEditorStyle::GetStyleSetName(), "GraphEditor.EventGraph_16x"));
+}
+
+void FInputSequenceAssetEditor::UnregisterTabSpawners(const TSharedRef<class FTabManager>& InTabManager)
+{
+	FAssetEditorToolkit::UnregisterTabSpawners(InTabManager);
+
+	InTabManager->UnregisterTabSpawner(GraphTabId);
+	InTabManager->UnregisterTabSpawner(DetailsTabId);
+}
+
+TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_DetailsTab(const FSpawnTabArgs& Args)
+{
+	check(Args.GetTabId() == DetailsTabId);
+
+	FPropertyEditorModule& PropertyEditorModule = FModuleManager::GetModuleChecked<FPropertyEditorModule>("PropertyEditor");
+
+	FDetailsViewArgs DetailsViewArgs = FDetailsViewArgs();
+	DetailsViewArgs.bUpdatesFromSelection = false;
+	DetailsViewArgs.bLockable = false;
+	DetailsViewArgs.bAllowSearch = false;
+	DetailsViewArgs.NameAreaSettings = FDetailsViewArgs::HideNameArea;
+	DetailsViewArgs.bHideSelectionTip = true;
+
+	DetailsView = PropertyEditorModule.CreateDetailView(DetailsViewArgs);
+	DetailsView->SetObject(NULL);
+
+	return SNew(SDockTab).Label(LOCTEXT("DetailsTab_Label", "Details"))[DetailsView.ToSharedRef()];
+}
+
+TSharedRef<SDockTab> FInputSequenceAssetEditor::SpawnTab_GraphTab(const FSpawnTabArgs& Args)
+{
+	check(Args.GetTabId().TabType == GraphTabId);
+
+	check(InputSequenceAsset != NULL);
+
+	if (InputSequenceAsset->EdGraph == NULL)
+	{
+		InputSequenceAsset->EdGraph = NewObject<UInputSequenceGraph>(InputSequenceAsset, NAME_None, RF_Transactional);
+		InputSequenceAsset->EdGraph->GetSchema()->CreateDefaultNodesForGraph(*InputSequenceAsset->EdGraph);
+	}
+
+	check(InputSequenceAsset->EdGraph != NULL);
+
+	FGraphAppearanceInfo AppearanceInfo;
+	AppearanceInfo.CornerText = LOCTEXT("GraphTab_AppearanceInfo_CornerText", "Input Sequence Asset");
+
+	SGraphEditor::FGraphEditorEvents InEvents;
+	InEvents.OnSelectionChanged = SGraphEditor::FOnSelectionChanged::CreateSP(this, &FInputSequenceAssetEditor::OnSelectionChanged);
+
+	CreateCommandList();
+
+	return SNew(SDockTab)
+		.Label(LOCTEXT("GraphTab_Label", "Graph"))
+		.TabColorScale(GetTabColorScale())
+		[
+			SAssignNew(GraphEditorPtr, SGraphEditor)
+			.AdditionalCommands(GraphEditorCommands)
+		.Appearance(AppearanceInfo)
+		.GraphEvents(InEvents)
+		.TitleBar(SNew(STextBlock).Text(LOCTEXT("GraphTab_Title", "Input Sequence Asset")).TextStyle(FEditorStyle::Get(), TEXT("GraphBreadcrumbButtonText")))
+		.GraphToEdit(InputSequenceAsset->EdGraph)
+		];
+}
+
+void FInputSequenceAssetEditor::CreateCommandList()
+{
+	if (GraphEditorCommands.IsValid()) return;
+
+	GraphEditorCommands = MakeShareable(new FUICommandList);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().SelectAll,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::SelectAllNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanSelectAllNodes)
+	);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().Delete,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::DeleteSelectedNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanDeleteNodes)
+	);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().Copy,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CopySelectedNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanCopyNodes)
+	);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().Cut,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CutSelectedNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanCutNodes)
+	);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().Paste,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::PasteNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanPasteNodes)
+	);
+
+	GraphEditorCommands->MapAction(FGenericCommands::Get().Duplicate,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::DuplicateNodes),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanDuplicateNodes)
+	);
+
+	GraphEditorCommands->MapAction(
+		FGraphEditorCommands::Get().CreateComment,
+		FExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::OnCreateComment),
+		FCanExecuteAction::CreateRaw(this, &FInputSequenceAssetEditor::CanCreateComment)
+	);
+}
+
+void FInputSequenceAssetEditor::OnSelectionChanged(const TSet<UObject*>& selectedNodes)
+{
+	return selectedNodes.Num() == 1 ? DetailsView->SetObject(*selectedNodes.begin()) : DetailsView->SetObject(NULL);
+}
+
+FGraphPanelSelectionSet FInputSequenceAssetEditor::GetSelectedNodes() const
+{
+	FGraphPanelSelectionSet CurrentSelection;
+
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			CurrentSelection = graphEditor->GetSelectedNodes();
+		}
+	}
+
+	return CurrentSelection;
+}
+
+void FInputSequenceAssetEditor::SelectAllNodes()
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			graphEditor->SelectAllNodes();
+		}
+	}
+}
+
+void FInputSequenceAssetEditor::DeleteSelectedNodes()
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			const FScopedTransaction Transaction(FGenericCommands::Get().Delete->GetDescription());
+
+			graphEditor->GetCurrentGraph()->Modify();
+
+			const FGraphPanelSelectionSet SelectedNodes = graphEditor->GetSelectedNodes();
+			graphEditor->ClearSelectionSet();
+
+			for (FGraphPanelSelectionSet::TConstIterator NodeIt(SelectedNodes); NodeIt; ++NodeIt)
+			{
+				if (UEdGraphNode* Node = Cast<UEdGraphNode>(*NodeIt))
+				{
+					if (Node->CanUserDeleteNode())
+					{
+						Node->Modify();
+						Node->DestroyNode();
+					}
+				}
+			}
+		}
+	}
+}
+
+bool FInputSequenceAssetEditor::CanDeleteNodes() const
+{
+	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+		if (Node && Node->CanUserDeleteNode()) return true;
+	}
+
+	return false;
+}
+
+void FInputSequenceAssetEditor::CopySelectedNodes()
+{
+	FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+
+	FString ExportedText;
+
+	int32 CopySubNodeIndex = 0;
+	for (FGraphPanelSelectionSet::TIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+
+		if (Node == nullptr)
+		{
+			SelectedIter.RemoveCurrent();
+			continue;
+		}
+
+		Node->PrepareForCopying();
+	}
+
+	FEdGraphUtilities::ExportNodesToText(SelectedNodes, ExportedText);
+	FPlatformApplicationMisc::ClipboardCopy(*ExportedText);
+
+	for (FGraphPanelSelectionSet::TIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{
+		////// TODO Check Outer for some reason they do reset outer here
+		//////UAIGraphNode* Node = Cast<UAIGraphNode>(*SelectedIter);
+		//////if (Node)
+		//////{
+		//////	Node->PostCopyNode();
+		//////}
+	}
+}
+
+bool FInputSequenceAssetEditor::CanCopyNodes() const
+{
+	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+	for (FGraphPanelSelectionSet::TConstIterator SelectedIter(SelectedNodes); SelectedIter; ++SelectedIter)
+	{
+		UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+		if (Node && Node->CanDuplicateNode()) return true;
+	}
+
+	return false;
+}
+
+void FInputSequenceAssetEditor::DeleteSelectedDuplicatableNodes()
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			const FGraphPanelSelectionSet OldSelectedNodes = graphEditor->GetSelectedNodes();
+			graphEditor->ClearSelectionSet();
+
+			for (FGraphPanelSelectionSet::TConstIterator SelectedIter(OldSelectedNodes); SelectedIter; ++SelectedIter)
+			{
+				UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter);
+				if (Node && Node->CanDuplicateNode())
+				{
+					graphEditor->SetNodeSelection(Node, true);
+				}
+			}
+
+			DeleteSelectedNodes();
+
+			graphEditor->ClearSelectionSet();
+
+			for (FGraphPanelSelectionSet::TConstIterator SelectedIter(OldSelectedNodes); SelectedIter; ++SelectedIter)
+			{
+				if (UEdGraphNode* Node = Cast<UEdGraphNode>(*SelectedIter))
+				{
+					graphEditor->SetNodeSelection(Node, true);
+				}
+			}
+		}
+	}
+}
+
+void FInputSequenceAssetEditor::PasteNodes()
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			FVector2D Location = graphEditor->GetPasteLocation();
+
+			UEdGraph* EdGraph = graphEditor->GetCurrentGraph();
+
+			// Undo/Redo support
+			const FScopedTransaction Transaction(FGenericCommands::Get().Paste->GetDescription());
+
+			EdGraph->Modify();
+
+			// Clear the selection set (newly pasted stuff will be selected)
+			graphEditor->ClearSelectionSet();
+
+			// Grab the text to paste from the clipboard.
+			FString TextToImport;
+			FPlatformApplicationMisc::ClipboardPaste(TextToImport);
+
+			// Import the nodes
+			TSet<UEdGraphNode*> PastedNodes;
+			FEdGraphUtilities::ImportNodesFromText(EdGraph, TextToImport, /*out*/ PastedNodes);
+
+			//Average position of nodes so we can move them while still maintaining relative distances to each other
+			FVector2D AvgNodePosition(0.0f, 0.0f);
+
+			for (TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
+			{
+				UEdGraphNode* Node = *It;
+				AvgNodePosition.X += Node->NodePosX;
+				AvgNodePosition.Y += Node->NodePosY;
+			}
+
+			if (PastedNodes.Num() > 0)
+			{
+				float InvNumNodes = 1.0f / float(PastedNodes.Num());
+				AvgNodePosition.X *= InvNumNodes;
+				AvgNodePosition.Y *= InvNumNodes;
+			}
+
+			for (TSet<UEdGraphNode*>::TIterator It(PastedNodes); It; ++It)
+			{
+				UEdGraphNode* Node = *It;
+
+				// Select the newly pasted stuff
+				graphEditor->SetNodeSelection(Node, true);
+
+				Node->NodePosX = (Node->NodePosX - AvgNodePosition.X) + Location.X;
+				Node->NodePosY = (Node->NodePosY - AvgNodePosition.Y) + Location.Y;
+
+				Node->SnapToGrid(GetDefault<UEditorStyleSettings>()->GridSnapSize);
+
+				// Give new node a different Guid from the old one
+				Node->CreateNewGuid();
+			}
+
+			InputSequenceAsset->PostEditChange();
+			InputSequenceAsset->MarkPackageDirty();
+		}
+	}
+}
+
+bool FInputSequenceAssetEditor::CanPasteNodes() const
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			FString ClipboardContent;
+			FPlatformApplicationMisc::ClipboardPaste(ClipboardContent);
+
+			return FEdGraphUtilities::CanImportNodesFromText(graphEditor->GetCurrentGraph(), ClipboardContent);
+		}
+	}
+
+	return false;
+}
+
+void FInputSequenceAssetEditor::OnCreateComment()
+{
+	if (TSharedPtr<SGraphEditor> graphEditor = GraphEditorPtr.Pin())
+	{
+		if (graphEditor.IsValid())
+		{
+			TSharedPtr<FEdGraphSchemaAction> Action = graphEditor->GetCurrentGraph()->GetSchema()->GetCreateCommentAction();
+			if (Action.IsValid())
+			{
+				Action->PerformAction(graphEditor->GetCurrentGraph(), nullptr, FVector2D());
+			}
+		}
+	}
+}
+
+bool FInputSequenceAssetEditor::CanCreateComment() const
+{
+	const FGraphPanelSelectionSet SelectedNodes = GetSelectedNodes();
+	return SelectedNodes.Num() > 0;
 }
 
 #undef LOCTEXT_NAMESPACE
