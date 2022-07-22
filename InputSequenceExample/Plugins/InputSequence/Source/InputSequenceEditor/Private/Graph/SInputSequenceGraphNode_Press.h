@@ -13,6 +13,4 @@ public:
 	void Construct(const FArguments& InArgs, UEdGraphNode* InNode);
 
 	virtual ~SInputSequenceGraphNode_Press();
-
-	virtual void UpdateGraphNode();
 };
